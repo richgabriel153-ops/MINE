@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Copy, Pencil, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle2, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 
+import { DeleteDialog } from "@/components/document/delete-dialog";
+import { canMarkPaid, MarkPaidDialog } from "@/components/document/mark-paid-dialog";
 import { PageHeader } from "@/components/layout/page-header";
 import { ShareBar } from "@/components/share/share-bar";
 import { getTemplate } from "@/components/templates";
@@ -46,11 +48,14 @@ export function ViewLoader() {
       </>
     );
 
-  return <DocumentView initialDoc={loaded.doc} profile={loaded.profile} />;
+  return <DocumentView key={loaded.doc.id} initialDoc={loaded.doc} profile={loaded.profile} />;
 }
 
 function DocumentView({ initialDoc, profile }: { initialDoc: DocumentRecord; profile: BusinessProfile }) {
+  const router = useRouter();
   const [doc, setDoc] = useState(initialDoc);
+  const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const template = getTemplate(doc.templateId);
   const Template = template.Component;
@@ -66,6 +71,27 @@ function DocumentView({ initialDoc, profile }: { initialDoc: DocumentRecord; pro
     <>
       <PageHeader title={doc.number} backHref="/history" />
       <div className="flex flex-col gap-4">
+        {canMarkPaid(doc) && (
+          <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-secondary p-3">
+            <p className="flex-1 text-sm">Has the customer paid? Turn this invoice into a receipt.</p>
+            <Button size="sm" onClick={() => setMarkPaidOpen(true)}>
+              <CheckCircle2 /> Mark as paid
+            </Button>
+          </div>
+        )}
+        {doc.receiptId && (
+          <p className="rounded-xl bg-muted p-3 text-sm">
+            Paid. <Link className="font-semibold text-primary underline" href={`/view?id=${doc.receiptId}`}>Open the receipt</Link>
+          </p>
+        )}
+        {doc.sourceInvoiceId && (
+          <p className="rounded-xl bg-muted p-3 text-sm">
+            Receipt for invoice{" "}
+            <Link className="font-semibold text-primary underline" href={`/view?id=${doc.sourceInvoiceId}`}>
+              {doc.sourceInvoiceNumber}
+            </Link>
+          </p>
+        )}
         <TemplatePicker value={doc.templateId} onChange={changeTemplate} brandColor={profile.brandColor} />
         <ScaledPreview width={template.width}>
           <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} />
@@ -82,13 +108,18 @@ function DocumentView({ initialDoc, profile }: { initialDoc: DocumentRecord; pro
               <Copy /> Make a copy
             </Link>
           </Button>
-          <Button asChild variant="ghost" className="col-span-2">
+          <Button asChild variant="ghost">
             <Link href={doc.type === "invoice" ? "/create?type=invoice" : "/create"}>
               <Plus /> New {doc.type}
             </Link>
           </Button>
+          <Button variant="ghost" className="text-destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 /> Delete
+          </Button>
         </div>
       </div>
+      {canMarkPaid(doc) && <MarkPaidDialog doc={doc} open={markPaidOpen} onOpenChange={setMarkPaidOpen} />}
+      <DeleteDialog doc={doc} open={deleteOpen} onOpenChange={setDeleteOpen} onDeleted={() => router.push("/history")} />
 
       {/* Full-size copy, off screen, used to make the image and PDF. */}
       <div aria-hidden className="pointer-events-none fixed top-0 -left-[10000px]">

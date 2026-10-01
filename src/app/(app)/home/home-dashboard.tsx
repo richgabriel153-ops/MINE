@@ -1,17 +1,34 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { FileText, ReceiptText } from "lucide-react";
+import { ChevronRight, FileText, ReceiptText, ShieldCheck } from "lucide-react";
 
 import { DocumentCard } from "@/components/history/document-card";
 import { Button } from "@/components/ui/button";
 import { useDocuments } from "@/hooks/use-documents";
 import { useProfile } from "@/hooks/use-profile";
+import { lagosDate } from "@/lib/dates";
+import { getSettings } from "@/lib/db";
+import { formatNaira } from "@/lib/money";
+import { summarise } from "@/lib/summary";
+
+/** Remind people to back up once they have some records and haven't for a while. */
+const BACKUP_REMINDER_AFTER_DOCS = 10;
+const BACKUP_REMINDER_DAYS = 14;
 
 export function HomeDashboard() {
   const [profile] = useProfile();
   const { docs } = useDocuments();
   const recent = docs?.slice(0, 5) ?? [];
+  const summary = useMemo(() => (docs ? summarise(docs, lagosDate()) : null), [docs]);
+  const [backupStale, setBackupStale] = useState(false);
+  useEffect(() => {
+    getSettings().then((s) =>
+      setBackupStale(!s.lastBackupAt || Date.now() - Date.parse(s.lastBackupAt) > BACKUP_REMINDER_DAYS * 86_400_000),
+    );
+  }, []);
+  const needsBackup = backupStale && docs !== null && docs.length >= BACKUP_REMINDER_AFTER_DOCS;
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,6 +67,53 @@ export function HomeDashboard() {
           <span className="text-xs text-muted-foreground">Ask for payment</span>
         </Link>
       </div>
+
+      {summary && docs && docs.length > 0 && (
+        <section aria-label="Summary" className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border bg-card p-4 shadow-xs">
+            <div className="text-xs text-muted-foreground">Sales this week</div>
+            <div className="mt-1 text-xl font-bold tabular-nums">{formatNaira(summary.weekKobo)}</div>
+          </div>
+          <div className="rounded-2xl border bg-card p-4 shadow-xs">
+            <div className="text-xs text-muted-foreground">Sales this month</div>
+            <div className="mt-1 text-xl font-bold tabular-nums">{formatNaira(summary.monthKobo)}</div>
+          </div>
+          <Link
+            href="/history?status=owing"
+            className="col-span-2 flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-xs active:bg-muted"
+          >
+            <div className="flex-1">
+              <div className="text-xs text-muted-foreground">Customers owe you</div>
+              <div className={`mt-1 text-xl font-bold tabular-nums ${summary.owingKobo > 0 ? "text-warning" : ""}`}>
+                {formatNaira(summary.owingKobo)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {summary.owingCount === 0
+                  ? "Nothing outstanding"
+                  : `${summary.owingCount} unpaid or part-paid ${summary.owingCount === 1 ? "document" : "documents"}`}
+              </div>
+            </div>
+            <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
+          </Link>
+          <p className="col-span-2 -mt-1 text-xs text-muted-foreground">
+            Sales = money received, by receipt date. Weeks start on Monday.
+          </p>
+        </section>
+      )}
+
+      {needsBackup && (
+        <Link
+          href="/settings"
+          className="flex items-center gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"
+        >
+          <ShieldCheck className="size-6 shrink-0 text-warning" />
+          <span className="flex-1">
+            <strong>Back up your records.</strong> Your receipts are only on this phone. Save a backup so you
+            don&apos;t lose them.
+          </span>
+          <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
+        </Link>
+      )}
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">

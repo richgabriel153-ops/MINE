@@ -1,8 +1,9 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
+import { BACKUP_APP, BACKUP_VERSION, planImport, type BackupFile, type ImportMode, type ImportPlan } from "./backup";
 import { newId } from "./id";
 import { formatDocNumber, type Counters } from "./numbering";
-import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type TemplateId } from "./types";
+import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type TemplateId } from "./types";
 
 /**
  * Everything lives in one IndexedDB database on the device:
@@ -125,9 +126,63 @@ export async function updateDocument(id: string, draft: DocumentDraft): Promise<
   return record;
 }
 
+/**
+ * Delete a document. If it was the receipt made from an invoice, the invoice stays "Paid"
+ * but forgets the link, so its money is still counted in the summary.
+ */
 export async function deleteDocument(id: string): Promise<void> {
   const db = await getDb();
-  await db.delete("documents", id);
+  const tx = db.transaction("documents", "readwrite");
+  const doc = await tx.store.get(id);
+  if (doc?.sourceInvoiceId) {
+    const invoice = await tx.store.get(doc.sourceInvoiceId);
+    if (invoice?.receiptId === id) {
+      const unlinked = { ...invoice, updatedAt: new Date().toISOString() };
+      delete unlinked.receiptId;
+      await tx.store.put(unlinked);
+    }
+  }
+  await tx.store.delete(id);
+  await tx.done;
+}
+
+/**
+ * The customer has paid an invoice: mark it Paid and create a matching receipt (RCT-…) dated today,
+ * linked both ways. Returns the new receipt.
+ */
+export async function markInvoicePaid(invoiceId: string, method: PaymentMethod, today: string): Promise<DocumentRecord> {
+  const db = await getDb();
+  const tx = db.transaction(["documents", "meta"], "readwrite");
+  const docs = tx.objectStore("documents");
+  const meta = tx.objectStore("meta");
+  const invoice = await docs.get(invoiceId);
+  if (!invoice || invoice.type !== "invoice") throw new Error("This invoice no longer exists.");
+  if (invoice.receiptId) throw new Error("This invoice has already been marked as paid.");
+
+  const counters = { ...ZERO_COUNTERS, ...((await meta.get("counters")) as Counters | undefined) };
+  counters.receipt += 1;
+  const now = new Date().toISOString();
+  const receipt: DocumentRecord = {
+    ...invoice,
+    id: newId(),
+    type: "receipt",
+    number: formatDocNumber("receipt", counters.receipt),
+    issueDate: today,
+    dueDate: null,
+    status: "paid",
+    amountPaidKobo: 0,
+    method,
+    createdAt: now,
+    updatedAt: now,
+    sourceInvoiceId: invoice.id,
+    sourceInvoiceNumber: invoice.number,
+  };
+  delete receipt.receiptId;
+  await meta.put(counters, "counters");
+  await docs.put(receipt);
+  await docs.put({ ...invoice, status: "paid", method, receiptId: receipt.id, updatedAt: now });
+  await tx.done;
+  return receipt;
 }
 
 /* ---------- Small settings (last notes, last template, …) ---------- */
@@ -135,9 +190,11 @@ export async function deleteDocument(id: string): Promise<void> {
 export interface Settings {
   lastNotes: string;
   lastTemplate: TemplateId;
+  /** ISO time of the last backup the user saved, or "" */
+  lastBackupAt: string;
 }
 
-const DEFAULT_SETTINGS: Settings = { lastNotes: "", lastTemplate: "classic" };
+const DEFAULT_SETTINGS: Settings = { lastNotes: "", lastTemplate: "classic", lastBackupAt: "" };
 
 export async function getSettings(): Promise<Settings> {
   const db = await getDb();
@@ -159,4 +216,41 @@ export async function setDocumentTemplate(id: string, templateId: TemplateId): P
   const updated = { ...doc, templateId };
   await db.put("documents", updated);
   return updated;
+}
+
+/* ---------- Backup ---------- */
+
+/** Everything on this phone, ready to save as a backup file. */
+export async function exportAll(): Promise<BackupFile> {
+  const [profile, counters, settings, documents] = await Promise.all([
+    getProfile(),
+    getCounters(),
+    getSettings(),
+    listDocuments(),
+  ]);
+  return {
+    app: BACKUP_APP,
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    profile,
+    counters,
+    settings: { lastNotes: settings.lastNotes, lastTemplate: settings.lastTemplate },
+    documents,
+  };
+}
+
+/** Restore a backup (see planImport for how merge/replace work). All-or-nothing. */
+export async function importBackup(backup: BackupFile, mode: ImportMode): Promise<ImportPlan> {
+  const [documents, counters, profile] = await Promise.all([listDocuments(), getCounters(), getProfile()]);
+  const plan = planImport(backup, { documents, counters, profile }, mode);
+  const db = await getDb();
+  const tx = db.transaction(["documents", "meta"], "readwrite");
+  const docs = tx.objectStore("documents");
+  if (mode === "replace") await docs.clear();
+  for (const doc of plan.documents) await docs.put(doc);
+  const meta = tx.objectStore("meta");
+  await meta.put(plan.counters, "counters");
+  await meta.put(plan.profile, "profile");
+  await tx.done;
+  return plan;
 }
