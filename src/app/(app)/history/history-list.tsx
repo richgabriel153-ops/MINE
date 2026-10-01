@@ -55,7 +55,9 @@ function groupByMonth(docs: DocumentRecord[]) {
 }
 
 export function HistoryList() {
-  const { docs: allDocs, reload } = useDocuments();
+  const { docs: everything, reload } = useDocuments();
+  // Quotations have their own page; History is receipts and invoices.
+  const allDocs = useMemo(() => everything?.filter((d) => d.type !== "quote") ?? null, [everything]);
   const { access, showUpgrade } = useAccess();
   const canTrackDebts = access?.can.trackDebts ?? false;
   // Free version shows the newest FREE_HISTORY_LIMIT documents; the rest stay saved and in backups.

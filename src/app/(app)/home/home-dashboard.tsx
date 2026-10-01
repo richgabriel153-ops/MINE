@@ -21,7 +21,8 @@ const BACKUP_REMINDER_DAYS = 14;
 
 export function HomeDashboard() {
   const [profile] = useProfile();
-  const { docs } = useDocuments();
+  const { docs: everything } = useDocuments();
+  const docs = useMemo(() => everything?.filter((d) => d.type !== "quote") ?? null, [everything]);
   const { access, showUpgrade } = useAccess();
   const canTrackDebts = access?.can.trackDebts ?? false;
   const recent = docs?.slice(0, 5) ?? [];

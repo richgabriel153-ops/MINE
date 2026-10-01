@@ -366,7 +366,8 @@ begin
      set issue_date = (p_doc ->> 'issueDate')::date,
          status = coalesce(p_doc ->> 'status', status),
          total_kobo = greatest(p_total, 0),
-         data = (p_doc - 'type' - 'number' - 'id') || jsonb_build_object(
+         -- Merge: fields from the form win; links (receipt, pay link, quote…) stay.
+         data = d.data || (p_doc - 'type' - 'number' - 'id') || jsonb_build_object(
                   'id', d.id, 'type', d.type, 'number', d.number, 'schemaVersion', 1,
                   'createdAt', d.data -> 'createdAt', 'updatedAt', now(),
                   'createdByName', d.data -> 'createdByName'),

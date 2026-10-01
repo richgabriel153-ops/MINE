@@ -7,9 +7,12 @@ import { computeTotals, lineTotalKobo } from "@/lib/totals";
 import {
   breakdownRows,
   contactLines,
+  docTitle,
+  dueLabel,
   formatQuantity,
   METHOD_LABEL,
   showsBankDetails,
+  showsStamp,
   STATUS_LABEL,
   TEMPLATE_FONT,
   TEMPLATE_WIDTH,
@@ -22,7 +25,6 @@ export function BoldTemplate({ doc, profile, showFooterBrand, payNow }: Template
   const brand = profile.brandColor;
   const onBrand = readableTextOn(brand);
   const totals = computeTotals(doc);
-  const isInvoice = doc.type === "invoice";
 
   return (
     <div style={{ width: TEMPLATE_WIDTH, fontFamily: TEMPLATE_FONT }} className="bg-white text-[13px] leading-snug text-[#111827]">
@@ -42,11 +44,11 @@ export function BoldTemplate({ doc, profile, showFooterBrand, payNow }: Template
             </div>
           )}
         </div>
-        <div className="mt-7 text-[40px] leading-none font-black tracking-tight">{isInvoice ? "INVOICE" : "RECEIPT"}</div>
+        <div className="mt-7 text-[40px] leading-none font-black tracking-tight">{docTitle(doc)}</div>
         <div className="mt-2 flex gap-5 text-[12px] opacity-90">
           <span>{doc.number}</span>
           <span>{formatDate(doc.issueDate)}</span>
-          {isInvoice && doc.dueDate && <span>Due {formatDate(doc.dueDate)}</span>}
+          {doc.type !== "receipt" && doc.dueDate && <span>{dueLabel(doc)} {formatDate(doc.dueDate)}</span>}
         </div>
       </div>
 
@@ -54,16 +56,18 @@ export function BoldTemplate({ doc, profile, showFooterBrand, payNow }: Template
         <div className="rounded-2xl bg-white px-5 py-4 shadow-[0_6px_24px_rgba(0,0,0,0.12)]">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[11px] font-semibold tracking-wider text-[#6b7280] uppercase">{isInvoice ? "Billed to" : "Customer"}</div>
+              <div className="text-[11px] font-semibold tracking-wider text-[#6b7280] uppercase">{doc.type === "receipt" ? "Customer" : doc.type === "quote" ? "Prepared for" : "Billed to"}</div>
               <div className="text-[15px] font-bold">{doc.customer.name || "—"}</div>
               {doc.customer.phone && <div className="text-[12px] text-[#4b5563]">{formatNgPhone(doc.customer.phone)}</div>}
             </div>
             <div className="text-right">
               <div className="text-[11px] font-semibold tracking-wider text-[#6b7280] uppercase">Total</div>
               <div className="text-[24px] font-black tabular-nums">{formatNaira(totals.totalKobo)}</div>
-              <div className="text-[11px] font-bold tracking-wider" style={{ color: brand }}>
-                {STATUS_LABEL[doc.status]}
-              </div>
+              {showsStamp(doc) && (
+                <div className="text-[11px] font-bold tracking-wider" style={{ color: brand }}>
+                  {STATUS_LABEL[doc.status]}
+                </div>
+              )}
             </div>
           </div>
         </div>

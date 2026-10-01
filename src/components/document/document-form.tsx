@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { createDocument, updateDocument, updateSettings } from "@/lib/db";
+import { createDocument, peekNextNumber, updateDocument, updateSettings } from "@/lib/db";
 import {
   defaultStatus,
   formTotals,
@@ -37,7 +37,13 @@ import type { BusinessProfile, DocType, PaymentMethod, PaymentStatus } from "@/l
 const TYPE_OPTIONS = [
   { value: "receipt", label: "Receipt" },
   { value: "invoice", label: "Invoice" },
+  { value: "quote", label: "Quote" },
 ] as const satisfies readonly { value: DocType; label: string }[];
+
+const QUOTE_TITLE_OPTIONS = [
+  { value: "quotation", label: "Quotation" },
+  { value: "proforma", label: "Proforma invoice" },
+] as const;
 
 const STATUS_OPTIONS = [
   { value: "paid", label: "Paid" },
@@ -95,6 +101,14 @@ export function DocumentForm({
     [triedSave, form, phoneValid],
   );
   const isInvoice = form.type === "invoice";
+  const isQuote = form.type === "quote";
+  const typeName = isQuote
+    ? form.quoteTitle === "proforma"
+      ? "proforma invoice"
+      : "quote"
+    : isInvoice
+      ? "invoice"
+      : "receipt";
   const needsProfile = profile.name.trim() === "";
 
   function set<K extends keyof DocumentFormState>(key: K, value: DocumentFormState[K]) {
@@ -103,7 +117,9 @@ export function DocumentForm({
 
   function changeType(type: DocType) {
     setForm((f) => ({ ...f, type, status: defaultStatus(type) }));
-    setNumberShown((n) => (type === "invoice" ? n.replace("RCT", "INV") : n.replace("INV", "RCT")));
+    peekNextNumber(type)
+      .then(setNumberShown)
+      .catch(() => undefined);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -143,8 +159,8 @@ export function DocumentForm({
           <div className="flex items-start gap-3">
             <Store className="mt-0.5 size-5 shrink-0 text-primary" />
             <p className="text-sm">
-              <strong>First, add your business name.</strong> It appears at the top of your receipts. It takes a
-              minute and you only do it once.
+              <strong>First, add your business name.</strong> It appears at the top of your receipts. It takes a minute
+              and you only do it once.
             </p>
           </div>
           <Button asChild>
@@ -156,7 +172,23 @@ export function DocumentForm({
       )}
 
       {!editingId && (
-        <Segmented label="Document type" value={form.type} onChange={changeType} options={TYPE_OPTIONS} />
+        <Segmented
+          label="Document type"
+          value={form.type}
+          onChange={(t) => {
+            if (t === "quote" && !access?.can.quotes && !requirePro("Quotations")) return;
+            changeType(t);
+          }}
+          options={TYPE_OPTIONS.map((o) => (o.value === "quote" && !access?.can.quotes ? { ...o, locked: true } : o))}
+        />
+      )}
+      {isQuote && (
+        <Segmented
+          label="Title on the document"
+          value={form.quoteTitle}
+          onChange={(v) => set("quoteTitle", v)}
+          options={QUOTE_TITLE_OPTIONS}
+        />
       )}
       <p className="-mt-4 text-sm text-muted-foreground">
         {editingId ? "Editing" : "This will be"} <span className="font-semibold text-foreground">{numberShown}</span>
@@ -245,63 +277,69 @@ export function DocumentForm({
 
       <TotalsPanel totals={totals} status={form.status} />
 
-      <Section title="Payment">
-        <Segmented
-          label="Payment status"
-          value={form.status}
-          onChange={(v) => {
-            if (v === "part" && !canTrackDebts && !legacyPartPayment && !requirePro("Part payments")) return;
-            set("status", v);
-          }}
-          options={STATUS_OPTIONS.map((o) => (o.value === "part" && !canTrackDebts ? { ...o, locked: true } : o))}
-        />
-        {form.status === "part" && (
-          <Field
-            id="amount-paid"
-            label="Amount paid so far"
-            error={errors.amountPaid}
-            hint={`Balance: ${formatNaira(totals.balanceKobo)}`}
-          >
-            <MoneyInput
+      {!isQuote && (
+        <Section title="Payment">
+          <Segmented
+            label="Payment status"
+            value={form.status}
+            onChange={(v) => {
+              if (v === "part" && !canTrackDebts && !legacyPartPayment && !requirePro("Part payments")) return;
+              set("status", v);
+            }}
+            options={STATUS_OPTIONS.map((o) => (o.value === "part" && !canTrackDebts ? { ...o, locked: true } : o))}
+          />
+          {form.status === "part" && (
+            <Field
               id="amount-paid"
-              value={form.amountPaidKobo}
-              onChange={(v) => set("amountPaidKobo", v)}
-              invalid={!!errors.amountPaid}
-              disabled={legacyPartPayment}
-            />
-            {legacyPartPayment && (
-              <p className="text-sm text-muted-foreground">
-                Recording part payments is now a Pro feature. You can still see this balance, or choose{" "}
-                <strong>Paid</strong> once the customer pays in full.
-              </p>
-            )}
-          </Field>
-        )}
-        {form.status !== "unpaid" && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Paid by</span>
-            <Segmented
-              label="Payment method"
-              value={form.method}
-              onChange={(v) => set("method", v)}
-              options={METHOD_OPTIONS}
-            />
-          </div>
-        )}
-        {isInvoice && !hasBankDetails(profile) && !needsProfile && (
-          <p className="text-sm text-muted-foreground">
-            Tip:{" "}
-            <Link className="font-medium text-primary underline" href="/profile">
-              add your bank details
-            </Link>{" "}
-            so they show on invoices.
-          </p>
-        )}
-      </Section>
+              label="Amount paid so far"
+              error={errors.amountPaid}
+              hint={`Balance: ${formatNaira(totals.balanceKobo)}`}
+            >
+              <MoneyInput
+                id="amount-paid"
+                value={form.amountPaidKobo}
+                onChange={(v) => set("amountPaidKobo", v)}
+                invalid={!!errors.amountPaid}
+                disabled={legacyPartPayment}
+              />
+              {legacyPartPayment && (
+                <p className="text-sm text-muted-foreground">
+                  Recording part payments is now a Pro feature. You can still see this balance, or choose{" "}
+                  <strong>Paid</strong> once the customer pays in full.
+                </p>
+              )}
+            </Field>
+          )}
+          {form.status !== "unpaid" && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">Paid by</span>
+              <Segmented
+                label="Payment method"
+                value={form.method}
+                onChange={(v) => set("method", v)}
+                options={METHOD_OPTIONS}
+              />
+            </div>
+          )}
+          {isInvoice && !hasBankDetails(profile) && !needsProfile && (
+            <p className="text-sm text-muted-foreground">
+              Tip:{" "}
+              <Link className="font-medium text-primary underline" href="/profile">
+                add your bank details
+              </Link>{" "}
+              so they show on invoices.
+            </p>
+          )}
+        </Section>
+      )}
 
       <Section title="Dates">
         <div className="grid grid-cols-2 gap-3">
-          <Field id="issue-date" label={isInvoice ? "Invoice date" : "Date"} error={errors.issueDate}>
+          <Field
+            id="issue-date"
+            label={isQuote ? "Quote date" : isInvoice ? "Invoice date" : "Date"}
+            error={errors.issueDate}
+          >
             <Input
               id="issue-date"
               type="date"
@@ -310,8 +348,8 @@ export function DocumentForm({
             />
             <span className="text-xs text-muted-foreground">{formatDate(form.issueDate)}</span>
           </Field>
-          {isInvoice && (
-            <Field id="due-date" label="Due date" error={errors.dueDate}>
+          {(isInvoice || isQuote) && (
+            <Field id="due-date" label={isQuote ? "Valid until" : "Due date"} error={errors.dueDate}>
               <Input
                 id="due-date"
                 type="date"
@@ -357,7 +395,7 @@ export function DocumentForm({
           <span className="text-lg font-bold tabular-nums">{formatNaira(totals.totalKobo)}</span>
         </div>
         <Button type="submit" size="lg" className="flex-1" disabled={saving}>
-          {saving ? "Saving…" : editingId ? "Save changes" : `Save ${isInvoice ? "invoice" : "receipt"}`}
+          {saving ? "Saving…" : editingId ? "Save changes" : `Save ${typeName}`}
         </Button>
       </div>
     </form>

@@ -7,9 +7,11 @@ import { computeTotals, lineTotalKobo } from "@/lib/totals";
 import {
   breakdownRows,
   contactLines,
+  docTitle,
   formatQuantity,
   METHOD_LABEL,
   showsBankDetails,
+  showsStamp,
   STATUS_COLOUR,
   STATUS_LABEL,
   TEMPLATE_FONT,
@@ -27,7 +29,6 @@ function Dashes() {
 export function CompactTemplate({ doc, profile, showFooterBrand, payNow }: TemplateProps) {
   const brandText = brandTextColour(profile.brandColor);
   const totals = computeTotals(doc);
-  const isInvoice = doc.type === "invoice";
 
   return (
     <div style={{ width: COMPACT_WIDTH, fontFamily: TEMPLATE_FONT }} className="bg-white px-6 pt-6 pb-4 text-[12.5px] leading-snug text-[#111827]">
@@ -46,15 +47,15 @@ export function CompactTemplate({ doc, profile, showFooterBrand, payNow }: Templ
       <Dashes />
 
       <div className="text-center">
-        <div className="text-[13px] font-bold tracking-[0.2em]">{isInvoice ? "INVOICE" : "RECEIPT"}</div>
+        <div className="text-[13px] font-bold tracking-[0.2em]">{docTitle(doc)}</div>
       </div>
       <div className="mt-2 flex justify-between text-[11.5px]">
         <span>No. {doc.number}</span>
         <span>{formatDate(doc.issueDate)}</span>
       </div>
-      {isInvoice && doc.dueDate && (
+      {doc.type !== "receipt" && doc.dueDate && (
         <div className="flex justify-between text-[11.5px]">
-          <span className="text-[#6b7280]">Due date</span>
+          <span className="text-[#6b7280]">{doc.type === "quote" ? "Valid until" : "Due date"}</span>
           <span>{formatDate(doc.dueDate)}</span>
         </div>
       )}
@@ -107,12 +108,14 @@ export function CompactTemplate({ doc, profile, showFooterBrand, payNow }: Templ
       </div>
 
       <div className="mt-3 text-center">
-        <span
-          style={{ color: STATUS_COLOUR[doc.status], borderColor: STATUS_COLOUR[doc.status] }}
-          className="inline-block rounded border-2 px-3 py-0.5 text-[11px] font-bold tracking-widest"
-        >
-          {STATUS_LABEL[doc.status]}
-        </span>
+        {showsStamp(doc) && (
+          <span
+            style={{ color: STATUS_COLOUR[doc.status], borderColor: STATUS_COLOUR[doc.status] }}
+            className="inline-block rounded border-2 px-3 py-0.5 text-[11px] font-bold tracking-widest"
+          >
+            {STATUS_LABEL[doc.status]}
+          </span>
+        )}
         {doc.status !== "unpaid" && (
           <div className="mt-1 text-[11px] text-[#6b7280]">
             {METHOD_LABEL[doc.method]}

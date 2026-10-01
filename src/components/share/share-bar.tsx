@@ -25,6 +25,7 @@ export function ShareBar({
   exportRef,
   renderKey,
   payLink,
+  onShared,
 }: {
   doc: DocumentRecord;
   profile: BusinessProfile;
@@ -33,18 +34,21 @@ export function ShareBar({
   renderKey: string;
   /** Pay Now link to include in the message and PDF. */
   payLink?: string | null;
+  /** Called after the document was shared or downloaded (e.g. to mark a quote as Sent). */
+  onShared?: () => void;
 }) {
   const prepared = usePreparedImage(exportRef, renderKey);
   const [busy, setBusy] = useState<"png" | "pdf" | null>(null);
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const message = shareMessage(doc, profile, payLink);
-  const kind = doc.type === "invoice" ? "invoice" : "receipt";
+  const kind = doc.type === "quote" ? (doc.quoteTitle === "proforma" ? "proforma invoice" : "quote") : doc.type;
 
   async function onShare() {
     if (prepared?.status !== "ready") return;
     const { image } = prepared;
     const file = new File([image.blob], exportFileName(doc, profile, extensionFor(image.type)), { type: image.type });
     const result = await shareFile(file, message);
+    if (result !== "cancelled") onShared?.();
     if (result === "unsupported") {
       // No share sheet with files (e.g. some desktop browsers): save the image, then open WhatsApp.
       downloadBlob(file, file.name);
@@ -58,6 +62,7 @@ export function ShareBar({
     try {
       const png = await encodePng(prepared.canvas);
       downloadBlob(png.blob, exportFileName(doc, profile, "png"));
+      onShared?.();
       toast.success(`Image saved (${formatFileSize(png.blob.size)})`);
     } catch {
       toast.error("Could not save the image. Please try again.");
@@ -73,6 +78,7 @@ export function ShareBar({
       const { canvasToPdf } = await import("@/lib/export-pdf");
       const pdf = await canvasToPdf(prepared.canvas, payLink);
       downloadBlob(pdf, exportFileName(doc, profile, "pdf"));
+      onShared?.();
       toast.success(`PDF saved (${formatFileSize(pdf.size)})`);
     } catch {
       toast.error("Could not make the PDF. Check your connection and try again.");
@@ -88,7 +94,7 @@ export function ShareBar({
     <div className="flex flex-col gap-3">
       <Button size="lg" className="w-full bg-[#1fa855] hover:bg-[#1b9a4d]" onClick={onShare} disabled={!ready}>
         {ready ? <MessageCircle /> : <Loader2 className="animate-spin" />}
-        {ready ? `Send ${kind} on WhatsApp` : failed ? "Image not ready" : "Getting image ready…"}
+        {ready ? `Send ${kind === "proforma invoice" ? "proforma" : kind} on WhatsApp` : failed ? "Image not ready" : "Getting image ready…"}
       </Button>
       <div className="grid grid-cols-2 gap-3">
         <Button variant="outline" onClick={onDownloadPng} disabled={!ready || busy !== null}>

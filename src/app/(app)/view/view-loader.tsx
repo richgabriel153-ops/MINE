@@ -7,6 +7,7 @@ import { CheckCircle2, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { DeleteDialog } from "@/components/document/delete-dialog";
 import { PaymentHistory, RecordPayment } from "@/components/document/record-payment";
+import { QuotePanel } from "@/components/document/quote-panel";
 import { canMarkPaid, MarkPaidDialog } from "@/components/document/mark-paid-dialog";
 import { PageHeader } from "@/components/layout/page-header";
 import { PayLinkPanel } from "@/components/share/pay-link-panel";
@@ -16,7 +17,7 @@ import { ScaledPreview } from "@/components/templates/scaled-preview";
 import { TemplatePicker } from "@/components/templates/template-picker";
 import { Button } from "@/components/ui/button";
 import { useAccess } from "@/components/access/access-provider";
-import { getDocument, getProfile, setDocumentTemplate, updateSettings } from "@/lib/db";
+import { getDocument, getProfile, setDocumentTemplate, setQuoteStatus, updateSettings } from "@/lib/db";
 import { payUrl, showsPayLink } from "@/lib/pay-link";
 import { computeTotals } from "@/lib/totals";
 import type { BusinessProfile, DocumentRecord, TemplateId } from "@/lib/types";
@@ -97,7 +98,7 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
 
   return (
     <>
-      <PageHeader title={doc.number} backHref="/history" />
+      <PageHeader title={doc.number} backHref={doc.type === "quote" ? "/quotes" : "/history"} />
       <div className="flex flex-col gap-4">
         {canMarkPaid(doc) && (
           <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-secondary p-3">
@@ -130,6 +131,7 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
         <ScaledPreview width={template.width}>
           <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} payNow={payNow} />
         </ScaledPreview>
+        {doc.type === "quote" && <QuotePanel doc={doc} onChange={(d) => setDoc((cur) => ({ ...cur, ...d }))} />}
         {doc.type !== "quote" && <RecordPayment doc={doc} onRecorded={(updated) => setDoc((d) => ({ ...d, ...updated }))} />}
         <PaymentHistory doc={doc} />
         {doc.createdByName && access?.mode === "cloud" && (
@@ -144,6 +146,11 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
           exportRef={exportRef}
           renderKey={`${doc.id}:${doc.templateId}:${doc.updatedAt}:${payNow ? `${payNow.url}:${payNow.qr ? 1 : 0}` : ""}`}
           payLink={payNow?.url}
+          onShared={
+            doc.type === "quote" && (doc.quoteStatus ?? "draft") === "draft" && !doc.invoiceId
+              ? () => setQuoteStatus(doc.id, "sent").then((d) => setDoc((cur) => ({ ...cur, ...d }))).catch(() => undefined)
+              : undefined
+          }
         />
         <div className="grid grid-cols-2 gap-3">
           {canEdit ? (
@@ -166,7 +173,7 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
             </Link>
           </Button>
           <Button asChild variant="ghost">
-            <Link href={doc.type === "invoice" ? "/create?type=invoice" : "/create"}>
+            <Link href={doc.type === "receipt" ? "/create" : `/create?type=${doc.type}`}>
               <Plus /> New {doc.type}
             </Link>
           </Button>

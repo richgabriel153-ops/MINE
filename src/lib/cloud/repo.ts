@@ -5,7 +5,7 @@
 import { formatDocNumber, type Counters } from "../numbering";
 import { computeTotals } from "../totals";
 import type { Expense, ExpenseDraft } from "../expenses";
-import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type TemplateId } from "../types";
+import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type QuoteStatus, type TemplateId } from "../types";
 import { friendlyError, supabase } from "./client";
 
 export interface DocumentRow {
@@ -360,4 +360,19 @@ export async function listSales(businessId: string): Promise<{ date: string; amo
   const { data, error } = await supabase().from("payments").select("paid_on, amount_kobo").eq("business_id", businessId);
   if (error) throw friendlyError(error);
   return (data as { paid_on: string; amount_kobo: number | string }[]).map((p) => ({ date: p.paid_on, amountKobo: Number(p.amount_kobo) }));
+}
+
+/* ---------- Quotations ---------- */
+
+export async function setQuoteStatus(id: string, status: QuoteStatus): Promise<DocumentRecord> {
+  return rowToDocument(await call<DocumentRow>("set_quote_status", { p_id: id, p_status: status }));
+}
+
+export async function convertQuote(id: string, today: string): Promise<DocumentRecord> {
+  try {
+    return rowToDocument(await call<DocumentRow>("convert_quote", { p_id: id, p_today: today, p_due_days: 7 }));
+  } catch (err) {
+    if (err instanceof Error && /already_converted/.test(err.message)) throw new Error("This quote has already been turned into an invoice.");
+    throw err;
+  }
 }

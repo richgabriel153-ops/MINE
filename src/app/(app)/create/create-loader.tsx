@@ -26,7 +26,8 @@ export function CreateLoader() {
   const params = useSearchParams();
   const editId = params.get("edit");
   const duplicateId = params.get("duplicate");
-  const type: DocType = params.get("type") === "invoice" ? "invoice" : "receipt";
+  const rawType = params.get("type");
+  const type: DocType = rawType === "invoice" || rawType === "quote" ? rawType : "receipt";
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export function CreateLoader() {
     };
   }, [editId, duplicateId, type]);
 
-  const title = editId ? "Edit" : duplicateId ? "Copy" : type === "invoice" ? "New invoice" : "New receipt";
+  const title = editId ? "Edit" : duplicateId ? "Copy" : type === "quote" ? "New quote" : type === "invoice" ? "New invoice" : "New receipt";
 
   if (loaded.state === "loading")
     return (

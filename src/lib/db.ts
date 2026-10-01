@@ -8,7 +8,7 @@ import type { Expense, ExpenseDraft } from "./expenses";
 import * as local from "./local-db";
 import { OWNER_ONLY_MESSAGE } from "./permissions";
 import { salesFromDocuments } from "./summary";
-import type { BusinessProfile, DocType, DocumentDraft, DocumentRecord, PaymentMethod, TemplateId } from "./types";
+import type { BusinessProfile, DocType, DocumentDraft, DocumentRecord, PaymentMethod, QuoteStatus, TemplateId } from "./types";
 
 // Things that always stay on this phone.
 export { getSettings, updateSettings, exportAll, importBackup, getProStatus, setProUnlocked } from "./local-db";
@@ -133,4 +133,17 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
+}
+
+/* ---------- Quotations (Pro) ---------- */
+
+export async function setQuoteStatus(id: string, status: QuoteStatus): Promise<DocumentRecord> {
+  const c = await getCloudContext();
+  return c ? cloud.setQuoteStatus(id, status) : local.setQuoteStatus(id, status);
+}
+
+/** One tap: make a linked invoice from a quote. Returns the new invoice. */
+export async function convertQuote(id: string, today: string): Promise<DocumentRecord> {
+  const c = await getCloudContext();
+  return c ? cloud.convertQuote(id, today) : local.convertQuote(id, today);
 }

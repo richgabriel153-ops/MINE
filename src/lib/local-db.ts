@@ -4,8 +4,9 @@ import { BACKUP_APP, BACKUP_VERSION, planImport, type BackupFile, type ImportMod
 import { OLD_DEFAULT_BRAND_COLOR } from "./brand";
 import type { Expense, ExpenseDraft } from "./expenses";
 import { newId } from "./id";
+import { invoiceFromQuote } from "./quotes";
 import { formatDocNumber, type Counters } from "./numbering";
-import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type TemplateId } from "./types";
+import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type QuoteStatus, type TemplateId } from "./types";
 
 /**
  * Everything lives in one IndexedDB database on the device:
@@ -225,6 +226,28 @@ export async function recordPayment(id: string, amountKobo: number, method: Paym
   };
   await db.put("documents", updated);
   return updated;
+}
+
+/* ---------- Quotations ---------- */
+
+export async function setQuoteStatus(id: string, status: QuoteStatus): Promise<DocumentRecord> {
+  const db = await getDb();
+  const doc = await db.get("documents", id);
+  if (!doc || doc.type !== "quote") throw new Error("This quote no longer exists.");
+  const updated = { ...doc, quoteStatus: status, updatedAt: new Date().toISOString() };
+  await db.put("documents", updated);
+  return updated;
+}
+
+/** Make a linked invoice from a quote (numbered INV-…, dated today). Returns the invoice. */
+export async function convertQuote(id: string, today: string): Promise<DocumentRecord> {
+  const db = await getDb();
+  const quote = await db.get("documents", id);
+  if (!quote || quote.type !== "quote") throw new Error("This quote no longer exists.");
+  if (quote.invoiceId) throw new Error("This quote has already been turned into an invoice.");
+  const invoice = await createDocument(invoiceFromQuote(quote, today));
+  await db.put("documents", { ...quote, invoiceId: invoice.id, invoiceNumber: invoice.number, quoteStatus: "accepted", updatedAt: new Date().toISOString() });
+  return invoice;
 }
 
 /* ---------- Small settings (last notes, last template, …) ---------- */

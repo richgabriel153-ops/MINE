@@ -73,7 +73,24 @@ export function breakdownRows(doc: DocumentRecord, totals: Totals): TotalRow[] {
   return rows;
 }
 
-/** Bank details show on invoices that still need paying. */
+/** Bank details show on invoices that still need paying, and on proforma invoices. */
 export function showsBankDetails(doc: DocumentRecord, profile: BusinessProfile): boolean {
-  return doc.type === "invoice" && doc.status !== "paid" && profile.bankName.trim() !== "" && profile.accountNumber.trim() !== "";
+  const wanted = (doc.type === "invoice" && doc.status !== "paid") || (doc.type === "quote" && doc.quoteTitle === "proforma");
+  return wanted && profile.bankName.trim() !== "" && profile.accountNumber.trim() !== "";
+}
+
+/** Big title on the document. */
+export function docTitle(doc: DocumentRecord): string {
+  if (doc.type === "quote") return doc.quoteTitle === "proforma" ? "PROFORMA INVOICE" : "QUOTATION";
+  return doc.type === "invoice" ? "INVOICE" : "RECEIPT";
+}
+
+/** "Due" for invoices, "Valid until" for quotes. */
+export function dueLabel(doc: DocumentRecord): string {
+  return doc.type === "quote" ? "Valid until" : "Due";
+}
+
+/** Paid / Part paid / Unpaid stamp (not on quotes). */
+export function showsStamp(doc: DocumentRecord): boolean {
+  return doc.type !== "quote";
 }

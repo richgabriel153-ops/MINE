@@ -7,9 +7,11 @@ import { computeTotals, lineTotalKobo } from "@/lib/totals";
 import {
   breakdownRows,
   contactLines,
+  docTitle,
   formatQuantity,
   METHOD_LABEL,
   showsBankDetails,
+  showsStamp,
   STATUS_COLOUR,
   STATUS_LABEL,
   TEMPLATE_FONT,
@@ -26,7 +28,9 @@ export function ModernTemplate({ doc, profile, showFooterBrand, payNow }: Templa
   const totals = computeTotals(doc);
   const isInvoice = doc.type === "invoice";
   const headline =
-    doc.status === "paid"
+    doc.type === "quote"
+      ? { label: doc.quoteTitle === "proforma" ? "Amount to pay" : "Quote total", kobo: totals.totalKobo }
+      : doc.status === "paid"
       ? { label: isInvoice ? "Total" : "Amount paid", kobo: totals.totalKobo }
       : doc.status === "part"
         ? { label: "Balance to pay", kobo: totals.balanceKobo }
@@ -52,7 +56,7 @@ export function ModernTemplate({ doc, profile, showFooterBrand, payNow }: Templa
             ))}
           </div>
           <div className="shrink-0 text-right">
-            <div className="text-[11px] font-semibold tracking-[0.2em] text-[#9ca3af]">{isInvoice ? "INVOICE" : "RECEIPT"}</div>
+            <div className="text-[11px] font-semibold tracking-[0.2em] text-[#9ca3af]">{docTitle(doc)}</div>
             <div className="text-[15px] font-bold">{doc.number}</div>
             <div className="mt-1 text-[11.5px] text-[#6b7280]">{formatDate(doc.issueDate)}</div>
           </div>
@@ -68,22 +72,26 @@ export function ModernTemplate({ doc, profile, showFooterBrand, payNow }: Templa
             <div style={{ color: brandText }} className="text-[30px] leading-tight font-extrabold tabular-nums">
               {formatNaira(headline.kobo)}
             </div>
-            {isInvoice && doc.dueDate && doc.status !== "paid" && (
-              <div className="mt-0.5 text-[11.5px] text-[#4b5563]">Due by {formatDate(doc.dueDate)}</div>
+            {doc.type !== "receipt" && doc.dueDate && doc.status !== "paid" && (
+              <div className="mt-0.5 text-[11.5px] text-[#4b5563]">
+                {doc.type === "quote" ? "Valid until" : "Due by"} {formatDate(doc.dueDate)}
+              </div>
             )}
           </div>
-          <div
-            style={{ backgroundColor: STATUS_COLOUR[doc.status] }}
-            className="mb-1 rounded-full px-3 py-1 text-[10.5px] font-bold tracking-wider text-white"
-          >
-            {STATUS_LABEL[doc.status]}
-          </div>
+          {showsStamp(doc) && (
+            <div
+              style={{ backgroundColor: STATUS_COLOUR[doc.status] }}
+              className="mb-1 rounded-full px-3 py-1 text-[10.5px] font-bold tracking-wider text-white"
+            >
+              {STATUS_LABEL[doc.status]}
+            </div>
+          )}
         </div>
 
         {/* Customer */}
         {(doc.customer.name || doc.customer.phone) && (
           <div className="mt-5 flex gap-2 text-[12.5px]">
-            <span className="text-[#6b7280]">{isInvoice ? "Billed to" : "Customer"}:</span>
+            <span className="text-[#6b7280]">{doc.type === "receipt" ? "Customer" : doc.type === "quote" ? "Prepared for" : "Billed to"}:</span>
             <span className="font-semibold">
               {[doc.customer.name, doc.customer.phone && formatNgPhone(doc.customer.phone)].filter(Boolean).join(" · ")}
             </span>

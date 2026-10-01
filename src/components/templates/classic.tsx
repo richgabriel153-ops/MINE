@@ -3,12 +3,15 @@ import { brandTextColour, readableTextOn, withAlpha } from "@/lib/color";
 import { formatDate } from "@/lib/dates";
 import { formatNaira } from "@/lib/money";
 import { formatNgPhone } from "@/lib/phone";
-import { hasBankDetails } from "@/lib/profile";
 import { computeTotals, lineTotalKobo, VAT_PERCENT } from "@/lib/totals";
 import {
   contactLines,
+  docTitle,
+  dueLabel,
   formatQuantity,
   METHOD_LABEL,
+  showsBankDetails,
+  showsStamp,
   STATUS_COLOUR,
   STATUS_LABEL,
   TEMPLATE_FONT,
@@ -53,7 +56,7 @@ export function ClassicTemplate({ doc, profile, showFooterBrand, payNow }: Templ
         <div className="flex items-start justify-between gap-4">
           <div>
             <div style={{ color: brandText }} className="text-[24px] font-extrabold tracking-wide">
-              {isInvoice ? "INVOICE" : "RECEIPT"}
+              {docTitle(doc)}
             </div>
             <div className="mt-1 text-[12px] text-[#4b5563]">
               No. <span className="font-semibold text-[#111827]">{doc.number}</span>
@@ -66,17 +69,19 @@ export function ClassicTemplate({ doc, profile, showFooterBrand, payNow }: Templ
             <div>
               Date: <span className="font-semibold text-[#111827]">{formatDate(doc.issueDate)}</span>
             </div>
-            {isInvoice && doc.dueDate && (
+            {doc.type !== "receipt" && doc.dueDate && (
               <div>
-                Due: <span className="font-semibold text-[#111827]">{formatDate(doc.dueDate)}</span>
+                {dueLabel(doc)}: <span className="font-semibold text-[#111827]">{formatDate(doc.dueDate)}</span>
               </div>
             )}
-            <div
-              style={{ color: statusColour, borderColor: statusColour }}
-              className="mt-2 inline-block rounded-md border-2 px-2 py-0.5 text-[11px] font-bold tracking-wider"
-            >
-              {STATUS_LABEL[doc.status]}
-            </div>
+            {showsStamp(doc) && (
+              <div
+                style={{ color: statusColour, borderColor: statusColour }}
+                className="mt-2 inline-block rounded-md border-2 px-2 py-0.5 text-[11px] font-bold tracking-wider"
+              >
+                {STATUS_LABEL[doc.status]}
+              </div>
+            )}
           </div>
         </div>
 
@@ -84,7 +89,7 @@ export function ClassicTemplate({ doc, profile, showFooterBrand, payNow }: Templ
         {(doc.customer.name || doc.customer.phone) && (
           <div className="mt-5">
             <div className="text-[10.5px] font-semibold tracking-wider text-[#6b7280] uppercase">
-              {isInvoice ? "Bill to" : "Customer"}
+              {doc.type === "receipt" ? "Customer" : doc.type === "quote" ? "Prepared for" : "Bill to"}
             </div>
             {doc.customer.name && <div className="text-[14px] font-semibold">{doc.customer.name}</div>}
             {doc.customer.phone && <div className="text-[12px] text-[#4b5563]">{formatNgPhone(doc.customer.phone)}</div>}
@@ -150,7 +155,7 @@ export function ClassicTemplate({ doc, profile, showFooterBrand, payNow }: Templ
 
         {/* Bank details for invoices */}
         {payNow && <PayNowBlock url={payNow.url} qr={payNow.qr} colour={brandText} />}
-        {isInvoice && doc.status !== "paid" && hasBankDetails(profile) && (
+        {showsBankDetails(doc, profile) && (
           <div
             style={{ borderColor: withAlpha(brand, 0.4), backgroundColor: withAlpha(brand, 0.06) }}
             className="mt-4 rounded-lg border px-4 py-3"

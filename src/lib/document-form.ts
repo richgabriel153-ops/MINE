@@ -1,7 +1,8 @@
 import { newId } from "./id";
 import { addDays, lagosDate } from "./dates";
+import { QUOTE_VALID_DAYS } from "./quotes";
 import { computeTotals, type Totals } from "./totals";
-import type { DocType, DocumentDraft, DocumentRecord, PaymentMethod, PaymentStatus, TemplateId } from "./types";
+import type { DocType, DocumentDraft, DocumentRecord, PaymentMethod, PaymentStatus, QuoteStatus, TemplateId } from "./types";
 
 /** Form state. Amount fields are null while the box is empty. */
 export interface FormItem {
@@ -28,6 +29,9 @@ export interface DocumentFormState {
   method: PaymentMethod;
   notes: string;
   templateId: TemplateId;
+  /** Quotes only. */
+  quoteTitle: "quotation" | "proforma";
+  quoteStatus: QuoteStatus;
 }
 
 export const DEFAULT_DUE_DAYS = 7;
@@ -37,14 +41,18 @@ export function newItem(): FormItem {
 }
 
 export function defaultStatus(type: DocType): PaymentStatus {
-  return type === "invoice" ? "unpaid" : "paid";
+  return type === "receipt" ? "paid" : "unpaid";
+}
+
+function dueDays(type: DocType): number {
+  return type === "quote" ? QUOTE_VALID_DAYS : DEFAULT_DUE_DAYS;
 }
 
 export function emptyForm(type: DocType, today = lagosDate()): DocumentFormState {
   return {
     type,
     issueDate: today,
-    dueDate: addDays(today, DEFAULT_DUE_DAYS),
+    dueDate: addDays(today, dueDays(type)),
     customerName: "",
     customerPhone: "",
     items: [newItem()],
@@ -58,6 +66,8 @@ export function emptyForm(type: DocType, today = lagosDate()): DocumentFormState
     method: "transfer",
     notes: "",
     templateId: "classic",
+    quoteTitle: "quotation",
+    quoteStatus: "draft",
   };
 }
 
@@ -65,7 +75,7 @@ export function formFromRecord(doc: DocumentRecord): DocumentFormState {
   return {
     type: doc.type,
     issueDate: doc.issueDate,
-    dueDate: doc.dueDate ?? addDays(doc.issueDate, DEFAULT_DUE_DAYS),
+    dueDate: doc.dueDate ?? addDays(doc.issueDate, dueDays(doc.type)),
     customerName: doc.customer.name,
     customerPhone: doc.customer.phone,
     items: doc.items.map((i) => ({ ...i })),
@@ -79,6 +89,8 @@ export function formFromRecord(doc: DocumentRecord): DocumentFormState {
     method: doc.method,
     notes: doc.notes,
     templateId: doc.templateId,
+    quoteTitle: doc.quoteTitle ?? "quotation",
+    quoteStatus: doc.quoteStatus ?? "draft",
   };
 }
 
@@ -88,8 +100,9 @@ export function duplicateForm(doc: DocumentRecord, today = lagosDate()): Documen
   return {
     ...form,
     issueDate: today,
-    dueDate: addDays(today, DEFAULT_DUE_DAYS),
+    dueDate: addDays(today, dueDays(form.type)),
     items: form.items.map((i) => ({ ...i, id: newId() })),
+    quoteStatus: "draft",
   };
 }
 
@@ -111,10 +124,11 @@ export function toDraft(form: DocumentFormState): DocumentDraft {
       : form.discountPercent
         ? { type: "percent" as const, percent: form.discountPercent }
         : null;
+  const isQuote = form.type === "quote";
   return {
     type: form.type,
     issueDate: form.issueDate,
-    dueDate: form.type === "invoice" ? form.dueDate : null,
+    dueDate: form.type === "receipt" ? null : form.dueDate,
     customer: { name: form.customerName.trim(), phone: form.customerPhone },
     items: filledItems(form).map((i) => ({
       id: i.id,
@@ -125,11 +139,12 @@ export function toDraft(form: DocumentFormState): DocumentDraft {
     discount,
     deliveryKobo: form.deliveryKobo ?? 0,
     vatEnabled: form.vatEnabled,
-    status: form.status,
-    amountPaidKobo: form.status === "part" ? (form.amountPaidKobo ?? 0) : 0,
+    status: isQuote ? "unpaid" : form.status,
+    amountPaidKobo: !isQuote && form.status === "part" ? (form.amountPaidKobo ?? 0) : 0,
     method: form.method,
     notes: form.notes.trim(),
     templateId: form.templateId,
+    ...(isQuote ? { quoteTitle: form.quoteTitle, quoteStatus: form.quoteStatus } : {}),
   };
 }
 
@@ -193,6 +208,10 @@ export function validateForm(form: DocumentFormState, phoneValid = true): FormEr
   if (form.type === "invoice") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(form.dueDate)) errors.dueDate = "Choose a due date.";
     else if (form.dueDate < form.issueDate) errors.dueDate = "The due date can't be before the invoice date.";
+  }
+  if (form.type === "quote") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.dueDate)) errors.dueDate = "Choose a valid-until date.";
+    else if (form.dueDate < form.issueDate) errors.dueDate = "The valid-until date can't be before the quote date.";
   }
 
   return errors;

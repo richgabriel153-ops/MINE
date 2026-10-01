@@ -1,6 +1,8 @@
 export type DocType = "receipt" | "invoice" | "quote";
 export type PaymentStatus = "paid" | "part" | "unpaid";
 export type PaymentMethod = "transfer" | "cash" | "pos";
+/** Expired is worked out from the validity date, not stored. */
+export type QuoteStatus = "draft" | "sent" | "accepted" | "declined";
 export type TemplateId = "classic" | "modern" | "compact" | "bold" | "elegant";
 
 export interface LineItem {
@@ -54,6 +56,14 @@ export interface DocumentRecord {
   createdByName?: string;
   /** Pay Now link code (invoices, Pro). */
   payToken?: string;
+  /** Quotations: title shown, workflow status, and the invoice it became. */
+  quoteTitle?: "quotation" | "proforma";
+  quoteStatus?: QuoteStatus;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  /** Invoices made from a quote. */
+  sourceQuoteId?: string;
+  sourceQuoteNumber?: string;
 }
 
 /** What the create form edits: everything except fields the app assigns. */

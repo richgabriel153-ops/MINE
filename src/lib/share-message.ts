@@ -25,9 +25,18 @@ export function shareMessage(doc: DocumentRecord, profile: BusinessProfile, payL
   const totals = computeTotals(doc);
   const name = greetingName(doc.customer.name);
   const greeting = name ? `Hello ${name},` : "Hello,";
-  const kind = doc.type === "invoice" ? "invoice" : "receipt";
+  const kind = doc.type === "quote" ? (doc.quoteTitle === "proforma" ? "proforma invoice" : "quotation") : doc.type;
   const from = profile.name ? ` from ${profile.name}` : "";
   const lines = [`${greeting} here is your ${kind} ${doc.number}${from}.`, `Total: ${formatNaira(totals.totalKobo)}`];
+  if (doc.type === "quote") {
+    if (doc.dueDate) lines.push(`Valid until ${formatDate(doc.dueDate)}.`);
+    if (doc.quoteTitle === "proforma" && profile.bankName && profile.accountNumber) {
+      const name = profile.accountName ? ` (${profile.accountName})` : "";
+      lines.push(`Pay to: ${profile.bankName} ${profile.accountNumber}${name}`);
+    }
+    lines.push("Let us know if you'd like to go ahead. Thank you!");
+    return lines.join("\n");
+  }
 
   if (doc.status === "part") lines.push(`Paid: ${formatNaira(totals.amountPaidKobo)}`, `Balance: ${formatNaira(totals.balanceKobo)}`);
   if (doc.type === "invoice" && doc.status !== "paid") {

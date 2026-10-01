@@ -7,9 +7,12 @@ import { computeTotals, lineTotalKobo } from "@/lib/totals";
 import {
   breakdownRows,
   contactLines,
+  docTitle,
+  dueLabel,
   formatQuantity,
   METHOD_LABEL,
   showsBankDetails,
+  showsStamp,
   STATUS_LABEL,
   TEMPLATE_FONT,
   TEMPLATE_WIDTH,
@@ -21,7 +24,6 @@ import { PayNowBlock } from "./pay-now-block";
 export function ElegantTemplate({ doc, profile, showFooterBrand, payNow }: TemplateProps) {
   const accent = brandTextColour(profile.brandColor);
   const totals = computeTotals(doc);
-  const isInvoice = doc.type === "invoice";
   const rule = <div className="my-5 h-px" style={{ backgroundColor: profile.brandColor, opacity: 0.35 }} />;
 
   return (
@@ -45,18 +47,18 @@ export function ElegantTemplate({ doc, profile, showFooterBrand, payNow }: Templ
 
       <div className="flex items-end justify-between">
         <div>
-          <div className="text-[11px] tracking-[0.3em] text-[#9ca3af] uppercase">{isInvoice ? "Invoice" : "Receipt"}</div>
+          <div className="text-[11px] tracking-[0.3em] text-[#9ca3af] uppercase">{docTitle(doc)}</div>
           <div className="text-[15px] font-medium">{doc.number}</div>
         </div>
         <div className="text-right text-[11.5px] text-[#4b5563]">
           <div>{formatDate(doc.issueDate)}</div>
-          {isInvoice && doc.dueDate && <div>Due {formatDate(doc.dueDate)}</div>}
+          {doc.type !== "receipt" && doc.dueDate && <div>{dueLabel(doc)} {formatDate(doc.dueDate)}</div>}
         </div>
       </div>
 
       {(doc.customer.name || doc.customer.phone) && (
         <div className="mt-4">
-          <div className="text-[10.5px] tracking-[0.3em] text-[#9ca3af] uppercase">{isInvoice ? "Prepared for" : "Thank you"}</div>
+          <div className="text-[10.5px] tracking-[0.3em] text-[#9ca3af] uppercase">{doc.type === "receipt" ? "Thank you" : "Prepared for"}</div>
           <div className="text-[14px] font-medium">{doc.customer.name}</div>
           {doc.customer.phone && <div className="text-[11.5px] text-[#6b7280]">{formatNgPhone(doc.customer.phone)}</div>}
         </div>
@@ -103,10 +105,12 @@ export function ElegantTemplate({ doc, profile, showFooterBrand, payNow }: Templ
         )}
       </div>
 
-      <div className="mt-5 text-center text-[11px] tracking-[0.3em] text-[#6b7280] uppercase">
-        {STATUS_LABEL[doc.status]}
-        {doc.status !== "unpaid" && ` · ${METHOD_LABEL[doc.method]}`}
-      </div>
+      {showsStamp(doc) && (
+        <div className="mt-5 text-center text-[11px] tracking-[0.3em] text-[#6b7280] uppercase">
+          {STATUS_LABEL[doc.status]}
+          {doc.status !== "unpaid" && ` · ${METHOD_LABEL[doc.method]}`}
+        </div>
+      )}
       {doc.sourceInvoiceNumber && <div className="text-center text-[11px] text-[#9ca3af]">For invoice {doc.sourceInvoiceNumber}</div>}
 
       {payNow && <PayNowBlock url={payNow.url} qr={payNow.qr} colour={accent} />}
