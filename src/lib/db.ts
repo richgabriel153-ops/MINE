@@ -4,8 +4,10 @@
  */
 import * as cloud from "./cloud/repo";
 import { getCloudContext } from "./cloud/session";
+import type { Expense, ExpenseDraft } from "./expenses";
 import * as local from "./local-db";
 import { OWNER_ONLY_MESSAGE } from "./permissions";
+import { salesFromDocuments } from "./summary";
 import type { BusinessProfile, DocType, DocumentDraft, DocumentRecord, PaymentMethod, TemplateId } from "./types";
 
 // Things that always stay on this phone.
@@ -79,4 +81,56 @@ export async function setDocumentTemplate(id: string, templateId: TemplateId): P
   const c = await getCloudContext();
   if (c) await cloud.setDocumentTemplate(id, templateId);
   else await local.setDocumentTemplate(id, templateId);
+}
+
+/* ---------- Expenses and profit (owner, Pro) ---------- */
+
+export async function listExpenses(): Promise<Expense[]> {
+  const c = await getCloudContext();
+  return c ? cloud.listExpenses(c.businessId) : local.listExpenses();
+}
+
+/** `photo`: a compressed JPEG to attach, null to remove, undefined to keep. */
+export async function saveExpense(id: string | null, draft: ExpenseDraft, photo?: Blob | null): Promise<Expense> {
+  const c = await getCloudContext();
+  if (c) return cloud.saveExpense(c.businessId, id, draft, photo);
+  const dataUrl = photo ? await blobToDataUrl(photo) : photo;
+  return local.saveExpense(id, draft, dataUrl);
+}
+
+export async function deleteExpense(expense: Expense): Promise<void> {
+  const c = await getCloudContext();
+  return c ? cloud.deleteExpense(c.businessId, expense) : local.deleteExpense(expense.id);
+}
+
+/** A viewable address for an expense photo. */
+export async function expensePhotoUrl(expense: Expense): Promise<string | null> {
+  if (expense.photo) return expense.photo;
+  if (expense.photoPath) return cloud.expensePhotoUrl(expense.photoPath);
+  return null;
+}
+
+export async function getExpenseCategories(): Promise<string[]> {
+  const c = await getCloudContext();
+  return c ? cloud.getExpenseCategories(c.businessId) : local.getExpenseCategories();
+}
+
+export async function setExpenseCategories(categories: string[]): Promise<void> {
+  const c = await getCloudContext();
+  return c ? cloud.setExpenseCategories(c.businessId, categories) : local.setExpenseCategories(categories);
+}
+
+/** Money received per day: payments (account) or receipts/invoices (phone). */
+export async function listSales(): Promise<{ date: string; amountKobo: number }[]> {
+  const c = await getCloudContext();
+  return c ? cloud.listSales(c.businessId) : salesFromDocuments(await local.listDocuments());
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }

@@ -1,4 +1,5 @@
 import { countersFromNumbers, type Counters } from "./numbering";
+import type { Expense } from "./expenses";
 import { EMPTY_PROFILE, type BusinessProfile, type DocumentRecord } from "./types";
 
 export const BACKUP_APP = "inceipt";
@@ -14,6 +15,9 @@ export interface BackupFile {
   counters: Counters;
   settings: Record<string, unknown>;
   documents: DocumentRecord[];
+  /** Added later; older backups don't have it. */
+  expenses?: Expense[];
+  expenseCategories?: string[];
 }
 
 export class BackupError extends Error {}
@@ -72,6 +76,12 @@ export function parseBackup(text: string): BackupFile {
     },
     settings: isObject(data.settings) ? data.settings : {},
     documents: data.documents as DocumentRecord[],
+    expenses: Array.isArray(data.expenses)
+      ? (data.expenses as Expense[]).filter(
+          (e) => isObject(e) && typeof e.id === "string" && Number.isSafeInteger(e.amountKobo) && typeof e.date === "string",
+        )
+      : [],
+    expenseCategories: Array.isArray(data.expenseCategories) ? data.expenseCategories.filter((c): c is string => typeof c === "string") : [],
   };
 }
 

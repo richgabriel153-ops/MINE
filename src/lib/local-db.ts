@@ -2,6 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
 import { BACKUP_APP, BACKUP_VERSION, planImport, type BackupFile, type ImportMode, type ImportPlan } from "./backup";
 import { OLD_DEFAULT_BRAND_COLOR } from "./brand";
+import type { Expense, ExpenseDraft } from "./expenses";
 import { newId } from "./id";
 import { formatDocNumber, type Counters } from "./numbering";
 import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type TemplateId } from "./types";
@@ -21,21 +22,33 @@ interface InCeiptDB extends DBSchema {
     key: string;
     value: unknown;
   };
+  expenses: {
+    key: string;
+    value: Expense;
+    indexes: { byDate: string };
+  };
 }
 
 // Internal name kept from before the rename to InCeipt, so records already on phones stay.
 const DB_NAME = "receiptnaija";
-const DB_VERSION = 1;
+// v1: documents + meta. v2: expenses.
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<InCeiptDB>> | null = null;
 
 function getDb() {
   if (!dbPromise) {
     dbPromise = openDB<InCeiptDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        const docs = db.createObjectStore("documents", { keyPath: "id" });
-        docs.createIndex("byCreatedAt", "createdAt");
-        db.createObjectStore("meta");
+      upgrade(db, oldVersion) {
+        // Each step runs once per phone, so existing records are kept.
+        if (oldVersion < 1) {
+          const docs = db.createObjectStore("documents", { keyPath: "id" });
+          docs.createIndex("byCreatedAt", "createdAt");
+          db.createObjectStore("meta");
+        }
+        if (oldVersion < 2) {
+          db.createObjectStore("expenses", { keyPath: "id" }).createIndex("byDate", "date");
+        }
       },
     });
   }
@@ -251,11 +264,13 @@ export async function setDocumentTemplate(id: string, templateId: TemplateId): P
 
 /** Everything on this phone, ready to save as a backup file. */
 export async function exportAll(): Promise<BackupFile> {
-  const [profile, counters, settings, documents] = await Promise.all([
+  const [profile, counters, settings, documents, expenses, expenseCategories] = await Promise.all([
     getProfile(),
     getCounters(),
     getSettings(),
     listDocuments(),
+    listExpenses(),
+    getExpenseCategories(),
   ]);
   return {
     app: BACKUP_APP,
@@ -265,6 +280,8 @@ export async function exportAll(): Promise<BackupFile> {
     counters,
     settings: { lastNotes: settings.lastNotes, lastTemplate: settings.lastTemplate },
     documents,
+    expenses,
+    expenseCategories,
   };
 }
 
@@ -273,15 +290,65 @@ export async function importBackup(backup: BackupFile, mode: ImportMode): Promis
   const [documents, counters, profile] = await Promise.all([listDocuments(), getCounters(), getProfile()]);
   const plan = planImport(backup, { documents, counters, profile }, mode);
   const db = await getDb();
-  const tx = db.transaction(["documents", "meta"], "readwrite");
+  const tx = db.transaction(["documents", "meta", "expenses"], "readwrite");
   const docs = tx.objectStore("documents");
   if (mode === "replace") await docs.clear();
   for (const doc of plan.documents) await docs.put(doc);
+  const expenses = tx.objectStore("expenses");
+  if (mode === "replace") await expenses.clear();
+  for (const e of backup.expenses ?? []) {
+    const existing = await expenses.get(e.id);
+    if (!existing || e.updatedAt > existing.updatedAt) await expenses.put(e);
+  }
   const meta = tx.objectStore("meta");
   await meta.put(plan.counters, "counters");
   await meta.put(plan.profile, "profile");
+  if (backup.expenseCategories?.length) {
+    const current = mode === "replace" ? [] : (((await meta.get("expenseCategories")) as string[] | undefined) ?? []);
+    await meta.put([...new Set([...current, ...backup.expenseCategories])], "expenseCategories");
+  }
   await tx.done;
   return plan;
+}
+
+/* ---------- Expenses ---------- */
+
+/** All expenses, newest date first. */
+export async function listExpenses(): Promise<Expense[]> {
+  const db = await getDb();
+  const all = await db.getAll("expenses");
+  return all.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function saveExpense(id: string | null, draft: ExpenseDraft, photo?: string | null): Promise<Expense> {
+  const db = await getDb();
+  const existing = id ? await db.get("expenses", id) : undefined;
+  const now = new Date().toISOString();
+  const record: Expense = {
+    ...existing,
+    ...draft,
+    id: existing?.id ?? newId(),
+    photo: photo === undefined ? existing?.photo : photo || undefined,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+  await db.put("expenses", record);
+  return record;
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete("expenses", id);
+}
+
+export async function getExpenseCategories(): Promise<string[]> {
+  const db = await getDb();
+  return ((await db.get("meta", "expenseCategories")) as string[] | undefined) ?? [];
+}
+
+export async function setExpenseCategories(categories: string[]): Promise<void> {
+  const db = await getDb();
+  await db.put("meta", categories, "expenseCategories");
 }
 
 /* ---------- Pro ---------- */

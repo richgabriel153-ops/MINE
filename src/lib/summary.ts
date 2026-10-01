@@ -7,12 +7,14 @@ import type { DocumentRecord } from "./types";
  * An invoice that was turned into a receipt is skipped: the receipt already counts that money.
  */
 export function receivedKobo(doc: DocumentRecord): number {
+  if (doc.type === "quote") return 0;
   if (doc.type === "invoice" && doc.receiptId) return 0;
   return computeTotals(doc).amountPaidKobo;
 }
 
 /** Money still owed on a document (0 once an invoice has been turned into a receipt). */
 export function owingKobo(doc: DocumentRecord): number {
+  if (doc.type === "quote") return 0;
   if (doc.type === "invoice" && doc.receiptId) return 0;
   return computeTotals(doc).balanceKobo;
 }
@@ -46,4 +48,9 @@ export function summarise(docs: DocumentRecord[], today: string): Summary {
     }
   }
   return summary;
+}
+
+/** Money received per day, from this phone's records (dated by the receipt/invoice date). */
+export function salesFromDocuments(docs: DocumentRecord[]): { date: string; amountKobo: number }[] {
+  return docs.map((d) => ({ date: d.issueDate, amountKobo: receivedKobo(d) })).filter((e) => e.amountKobo > 0);
 }

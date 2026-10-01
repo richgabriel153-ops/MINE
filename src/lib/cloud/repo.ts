@@ -4,6 +4,7 @@
  */
 import { formatDocNumber, type Counters } from "../numbering";
 import { computeTotals } from "../totals";
+import type { Expense, ExpenseDraft } from "../expenses";
 import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type TemplateId } from "../types";
 import { friendlyError, supabase } from "./client";
 
@@ -261,4 +262,102 @@ export interface PaymentEntry {
 export async function documentPayments(documentId: string): Promise<PaymentEntry[]> {
   const rows = await call<PaymentEntry[]>("document_payments", { p_doc_id: documentId });
   return rows.map((r) => ({ ...r, amount_kobo: Number(r.amount_kobo) }));
+}
+
+/* ---------- Expenses (owner) ---------- */
+
+interface ExpenseRow {
+  id: string;
+  amount_kobo: number | string;
+  category: string;
+  spent_on: string;
+  note: string;
+  photo_path: string | null;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function rowToExpense(r: ExpenseRow): Expense {
+  return {
+    id: r.id,
+    amountKobo: Number(r.amount_kobo),
+    category: r.category,
+    date: r.spent_on,
+    note: r.note,
+    photoPath: r.photo_path,
+    createdByName: r.created_by_name,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+export async function listExpenses(businessId: string): Promise<Expense[]> {
+  const { data, error } = await supabase()
+    .from("expenses")
+    .select("*")
+    .eq("business_id", businessId)
+    .order("spent_on", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw friendlyError(error);
+  return (data as ExpenseRow[]).map(rowToExpense);
+}
+
+const PHOTO_BUCKET = "expense-photos";
+
+/** Save an expense; `photo` is a JPEG blob to upload, null to remove, undefined to keep. */
+export async function saveExpense(businessId: string, id: string | null, draft: ExpenseDraft, photo?: Blob | null, myName = ""): Promise<Expense> {
+  const sb = supabase();
+  const expenseId = id ?? crypto.randomUUID();
+  let photoPath: string | null | undefined;
+  if (photo) {
+    photoPath = `${businessId}/${expenseId}.jpg`;
+    const { error } = await sb.storage.from(PHOTO_BUCKET).upload(photoPath, photo, { contentType: "image/jpeg", upsert: true });
+    if (error) throw friendlyError(error);
+  } else if (photo === null) {
+    photoPath = null;
+    await sb.storage.from(PHOTO_BUCKET).remove([`${businessId}/${expenseId}.jpg`]);
+  }
+  const row = {
+    amount_kobo: draft.amountKobo,
+    category: draft.category,
+    spent_on: draft.date,
+    note: draft.note,
+    updated_at: new Date().toISOString(),
+    ...(photoPath !== undefined ? { photo_path: photoPath } : {}),
+  };
+  const query = id
+    ? sb.from("expenses").update(row).eq("id", id).select("*").single()
+    : sb.from("expenses").insert({ ...row, id: expenseId, business_id: businessId, created_by_name: myName }).select("*").single();
+  const { data, error } = await query;
+  if (error) throw friendlyError(error);
+  return rowToExpense(data as ExpenseRow);
+}
+
+export async function deleteExpense(businessId: string, expense: Expense): Promise<void> {
+  const { error } = await supabase().from("expenses").delete().eq("id", expense.id);
+  if (error) throw friendlyError(error);
+  if (expense.photoPath) await supabase().storage.from(PHOTO_BUCKET).remove([expense.photoPath]);
+  void businessId;
+}
+
+export async function expensePhotoUrl(path: string): Promise<string | null> {
+  const { data } = await supabase().storage.from(PHOTO_BUCKET).createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
+
+export async function getExpenseCategories(businessId: string): Promise<string[]> {
+  const settings = await getBusinessSettings(businessId);
+  return Array.isArray(settings.expenseCategories) ? (settings.expenseCategories as string[]) : [];
+}
+
+export async function setExpenseCategories(businessId: string, categories: string[]): Promise<void> {
+  await call("set_expense_categories", { bid: businessId, p_categories: categories });
+}
+
+/** Money received per day (owner): every payment by the date it was paid. */
+export async function listSales(businessId: string): Promise<{ date: string; amountKobo: number }[]> {
+  const { data, error } = await supabase().from("payments").select("paid_on, amount_kobo").eq("business_id", businessId);
+  if (error) throw friendlyError(error);
+  return (data as { paid_on: string; amount_kobo: number | string }[]).map((p) => ({ date: p.paid_on, amountKobo: Number(p.amount_kobo) }));
 }
