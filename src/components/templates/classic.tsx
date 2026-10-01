@@ -176,7 +176,7 @@ export function ClassicTemplate({ doc, profile, showFooterBrand }: TemplateProps
 
       {showFooterBrand && (
         <div className="border-t border-[#e5e7eb] py-2 text-center text-[10px] text-[#9ca3af]">
-          Made with ReceiptNaija
+          Made with InCeipt
         </div>
       )}
     </div>

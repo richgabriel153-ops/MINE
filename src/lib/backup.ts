@@ -1,7 +1,9 @@
 import { countersFromNumbers, type Counters } from "./numbering";
 import { EMPTY_PROFILE, type BusinessProfile, type DocumentRecord } from "./types";
 
-export const BACKUP_APP = "receiptnaija";
+export const BACKUP_APP = "inceipt";
+/** Backups made before the app was renamed from ReceiptNaija to InCeipt. */
+const LEGACY_BACKUP_APPS = ["receiptnaija"];
 export const BACKUP_VERSION = 1;
 
 export interface BackupFile {
@@ -48,11 +50,11 @@ export function parseBackup(text: string): BackupFile {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new BackupError("This file isn't a ReceiptNaija backup.");
+    throw new BackupError("This file isn't a InCeipt backup.");
   }
-  if (!isObject(data) || data.app !== BACKUP_APP) throw new BackupError("This file isn't a ReceiptNaija backup.");
+  if (!isObject(data) || (data.app !== BACKUP_APP && !LEGACY_BACKUP_APPS.includes(String(data.app)))) throw new BackupError("This file isn't a InCeipt backup.");
   if (typeof data.version !== "number" || data.version > BACKUP_VERSION)
-    throw new BackupError("This backup was made with a newer version of ReceiptNaija. Please update the app first.");
+    throw new BackupError("This backup was made with a newer version of InCeipt. Please update the app first.");
   if (!Array.isArray(data.documents)) throw new BackupError("This backup file is damaged.");
   const bad = data.documents.filter((d) => !isDocument(d)).length;
   if (bad > 0) throw new BackupError(`This backup file is damaged (${bad} record${bad === 1 ? "" : "s"} can't be read).`);
@@ -131,5 +133,5 @@ export function planImport(
 }
 
 export function backupFileName(today: string): string {
-  return `receiptnaija-backup-${today}.json`;
+  return `inceipt-backup-${today}.json`;
 }

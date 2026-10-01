@@ -24,13 +24,13 @@ const naira = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "ReceiptNaija – Free receipts & invoices for your business",
-    template: "%s · ReceiptNaija",
+    default: "InCeipt – Free receipts & invoices for your business",
+    template: "%s · InCeipt",
   },
   description:
     "Make neat receipts and invoices on your phone in seconds and send them to customers on WhatsApp. Free for Nigerian small businesses.",
-  applicationName: "ReceiptNaija",
-  appleWebApp: { capable: true, title: "ReceiptNaija", statusBarStyle: "default" },
+  applicationName: "InCeipt",
+  appleWebApp: { capable: true, title: "InCeipt", statusBarStyle: "default" },
   formatDetection: { telephone: false },
 };
 

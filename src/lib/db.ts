@@ -10,7 +10,7 @@ import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, 
  *   documents – receipts and invoices
  *   meta      – profile, number counters, settings
  */
-interface ReceiptNaijaDB extends DBSchema {
+interface InCeiptDB extends DBSchema {
   documents: {
     key: string;
     value: DocumentRecord;
@@ -22,14 +22,15 @@ interface ReceiptNaijaDB extends DBSchema {
   };
 }
 
+// Internal name kept from before the rename to InCeipt, so records already on phones stay.
 const DB_NAME = "receiptnaija";
 const DB_VERSION = 1;
 
-let dbPromise: Promise<IDBPDatabase<ReceiptNaijaDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<InCeiptDB>> | null = null;
 
 function getDb() {
   if (!dbPromise) {
-    dbPromise = openDB<ReceiptNaijaDB>(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<InCeiptDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
         const docs = db.createObjectStore("documents", { keyPath: "id" });
         docs.createIndex("byCreatedAt", "createdAt");

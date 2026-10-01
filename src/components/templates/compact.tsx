@@ -144,7 +144,7 @@ export function CompactTemplate({ doc, profile, showFooterBrand }: TemplateProps
       <div style={{ color: brandText }} className="mt-4 text-center text-[12px] font-semibold">
         Thank you!
       </div>
-      {showFooterBrand && <div className="mt-2 text-center text-[9.5px] text-[#9ca3af]">Made with ReceiptNaija</div>}
+      {showFooterBrand && <div className="mt-2 text-center text-[9.5px] text-[#9ca3af]">Made with InCeipt</div>}
     </div>
   );
 }

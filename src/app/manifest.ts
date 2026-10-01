@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "ReceiptNaija – Receipts & invoices",
-    short_name: "ReceiptNaija",
+    name: "InCeipt – Receipts & invoices",
+    short_name: "InCeipt",
     description: "Make neat receipts and invoices and send them on WhatsApp.",
     start_url: "/home",
     scope: "/",

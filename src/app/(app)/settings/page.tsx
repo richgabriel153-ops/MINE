@@ -17,7 +17,7 @@ export default function SettingsPage() {
         <Link href="/pro" className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-xs">
           <BadgeCheck className="size-6 text-primary" />
           <span className="flex-1">
-            <span className="block font-semibold">ReceiptNaija Pro</span>
+            <span className="block font-semibold">InCeipt Pro</span>
             <span className="block text-sm text-muted-foreground">No footer, extra templates, unlimited history</span>
           </span>
           <ChevronRight className="size-5 text-muted-foreground" />

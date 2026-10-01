@@ -26,7 +26,7 @@ function doc(id: string, number: string, updatedAt = "2026-10-01T10:00:00Z"): Do
 }
 
 const backup: BackupFile = {
-  app: "receiptnaija",
+  app: "inceipt",
   version: 1,
   exportedAt: "2026-10-01T12:00:00Z",
   profile: { ...EMPTY_PROFILE, name: "Old Phone Shop" },
@@ -40,6 +40,9 @@ describe("parseBackup", () => {
     const parsed = parseBackup(JSON.stringify(backup));
     expect(parsed.documents).toHaveLength(3);
     expect(parsed.profile.name).toBe("Old Phone Shop");
+  });
+  it("still reads backups made under the old name (ReceiptNaija)", () => {
+    expect(parseBackup(JSON.stringify({ ...backup, app: "receiptnaija" })).documents).toHaveLength(3);
   });
   it.each([
     ["not json", "hello"],

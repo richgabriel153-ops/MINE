@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SAMPLE_PROFILE, SAMPLE_RECEIPT } from "@/lib/sample";
 
 export const metadata: Metadata = {
-  title: { absolute: "ReceiptNaija – Free receipts & invoices on WhatsApp" },
+  title: { absolute: "InCeipt – Free receipts & invoices on WhatsApp" },
 };
 
 const STEPS = [
@@ -47,7 +47,7 @@ export default function LandingPage() {
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <ReceiptText className="size-5" />
           </span>
-          ReceiptNaija
+          InCeipt
         </Link>
         <Link href="/home" className="text-sm font-semibold text-primary">
           Open app
@@ -78,7 +78,7 @@ export default function LandingPage() {
             <ScaledPreview>
               <ClassicTemplate doc={SAMPLE_RECEIPT} profile={SAMPLE_PROFILE} showFooterBrand />
             </ScaledPreview>
-            <p className="mt-3 rotate-[1.5deg] text-center text-sm text-muted-foreground">A real receipt made with ReceiptNaija</p>
+            <p className="mt-3 rotate-[1.5deg] text-center text-sm text-muted-foreground">A real receipt made with InCeipt</p>
           </div>
         </section>
 
@@ -141,7 +141,7 @@ export default function LandingPage() {
           <Link href="/home">Open app</Link>
           <Link href="/pro">Go Pro</Link>
         </div>
-        <p>ReceiptNaija · Made for Nigerian small businesses</p>
+        <p>InCeipt · Made for Nigerian small businesses</p>
       </footer>
     </div>
   );

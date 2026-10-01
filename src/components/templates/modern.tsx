@@ -152,7 +152,7 @@ export function ModernTemplate({ doc, profile, showFooterBrand }: TemplateProps)
       </div>
 
       {showFooterBrand && (
-        <div className="pb-3 text-center text-[10px] text-[#9ca3af]">Made with ReceiptNaija</div>
+        <div className="pb-3 text-center text-[10px] text-[#9ca3af]">Made with InCeipt</div>
       )}
     </div>
   );

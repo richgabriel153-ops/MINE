@@ -121,7 +121,7 @@ export function ElegantTemplate({ doc, profile, showFooterBrand }: TemplateProps
 
       {doc.notes && <div className="mt-4 text-center text-[11.5px] whitespace-pre-line text-[#6b7280] italic">{doc.notes}</div>}
 
-      {showFooterBrand && <div className="mt-5 text-center text-[9.5px] text-[#9ca3af]">Made with ReceiptNaija</div>}
+      {showFooterBrand && <div className="mt-5 text-center text-[9.5px] text-[#9ca3af]">Made with InCeipt</div>}
     </div>
   );
 }

@@ -37,7 +37,7 @@ export function HomeDashboard() {
     <div className="flex flex-col gap-6">
       <header className="pt-5">
         <p className="text-sm text-muted-foreground">Welcome{profile?.name ? " back" : ""}</p>
-        <h1 className="text-2xl font-bold tracking-tight">{profile?.name || "ReceiptNaija"}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{profile?.name || "InCeipt"}</h1>
       </header>
 
       {profile && !profile.name && (
@@ -150,7 +150,7 @@ export function HomeDashboard() {
         <Link href="/pro" className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm shadow-xs">
           <BadgeCheck className="size-6 shrink-0 text-primary" />
           <span className="flex-1">
-            <strong>Go Pro:</strong> remove the ReceiptNaija footer, get 2 extra templates and unlimited history.
+            <strong>Go Pro:</strong> remove the InCeipt footer, get 2 extra templates and unlimited history.
           </span>
           <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
         </Link>

@@ -68,7 +68,7 @@ export function InstallButton({ className }: { className?: string }) {
       <Dialog open={iosHelp} onOpenChange={setIosHelp}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add ReceiptNaija to your home screen</DialogTitle>
+            <DialogTitle>Add InCeipt to your home screen</DialogTitle>
             <DialogDescription asChild>
               <ol className="mt-2 flex list-decimal flex-col gap-2 pl-5 text-base text-foreground">
                 <li>
@@ -79,7 +79,7 @@ export function InstallButton({ className }: { className?: string }) {
                   Scroll down and tap <strong>Add to Home Screen</strong>.
                 </li>
                 <li>
-                  Tap <strong>Add</strong>. ReceiptNaija opens like an app, even without internet.
+                  Tap <strong>Add</strong>. InCeipt opens like an app, even without internet.
                 </li>
               </ol>
             </DialogDescription>

@@ -12,7 +12,7 @@ export const TEMPLATE_FONT = "var(--font-inter), var(--font-naira), Roboto, Aria
 export interface TemplateProps {
   doc: DocumentRecord;
   profile: BusinessProfile;
-  /** Free version shows "Made with ReceiptNaija". */
+  /** Free version shows "Made with InCeipt". */
   showFooterBrand: boolean;
 }
 

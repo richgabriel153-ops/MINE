@@ -1,4 +1,4 @@
-/* ReceiptNaija service worker: makes the app open and work without internet.
+/* InCeipt service worker: makes the app open and work without internet.
  *
  * - Pages: network first (so updates arrive), falling back to the saved copy when offline
  *   or when the network is very slow.

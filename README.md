@@ -1,4 +1,4 @@
-# ReceiptNaija
+# InCeipt
 
 Free, mobile-first receipt and invoice generator for small Nigerian businesses.
 Everything is saved on the device (IndexedDB). No login and no database in v1.
@@ -19,6 +19,7 @@ Copy `.env.example` to `.env.local` and fill in the values.
 | Name | What it is |
 | --- | --- |
 | `NEXT_PUBLIC_PRO_PAYMENT_LINK` | Your Paystack payment page link, opened by "Upgrade to Pro". Must start with `https://`. |
+| `NEXT_PUBLIC_PRO_PRICE_LABEL` | Optional. Price text shown on the Go Pro page, e.g. `₦5,000 one-time`. Leave empty to hide it. |
 | `PRO_UNLOCK_CODES` | Comma-separated unlock codes, e.g. `NAIJA-PRO-7K2Q,NAIJA-PRO-9XWP`. Checked only on the server (`/api/unlock`), never sent to phones. |
 
 Redeploy after changing them (`NEXT_PUBLIC_…` values are built into the app).

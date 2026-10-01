@@ -126,7 +126,7 @@ export function BoldTemplate({ doc, profile, showFooterBrand }: TemplateProps) {
 
         {doc.notes && <div className="mt-4 text-[12px] whitespace-pre-line text-[#4b5563]">{doc.notes}</div>}
       </div>
-      {showFooterBrand && <div className="pb-3 text-center text-[10px] text-[#9ca3af]">Made with ReceiptNaija</div>}
+      {showFooterBrand && <div className="pb-3 text-center text-[10px] text-[#9ca3af]">Made with InCeipt</div>}
     </div>
   );
 }

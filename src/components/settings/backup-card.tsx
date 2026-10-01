@@ -71,7 +71,7 @@ export function BackupCard() {
     setBusy(true);
     try {
       const file = await makeBackupFile();
-      await navigator.share({ files: [file], title: "ReceiptNaija backup" });
+      await navigator.share({ files: [file], title: "InCeipt backup" });
       await markBackedUp(JSON.parse(await file.text()).documents.length);
     } catch (err) {
       if (!(err instanceof DOMException && err.name === "AbortError")) {
