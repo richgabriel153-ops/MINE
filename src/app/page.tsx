@@ -140,6 +140,9 @@ export default function LandingPage() {
         <div className="flex gap-4">
           <Link href="/home">Open app</Link>
           <Link href="/pro">Go Pro</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/refunds">Refunds</Link>
         </div>
         <p>InCeipt · Made for Nigerian small businesses</p>
       </footer>

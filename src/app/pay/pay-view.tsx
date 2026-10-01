@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 /* eslint-disable @next/next/no-img-element -- business logo is a data: URL */
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -187,7 +188,16 @@ export function PayView() {
           </p>
         </form>
       )}
-      <p className="pb-6 text-center text-xs text-muted-foreground">Invoice sent with InCeipt</p>
+      <p className="pb-6 text-center text-xs text-muted-foreground">
+        Invoice sent with InCeipt ·{" "}
+        <Link href="/refunds" className="underline">
+          Refunds
+        </Link>{" "}
+        ·{" "}
+        <Link href="/privacy" className="underline">
+          Privacy
+        </Link>
+      </p>
     </div>
   );
 }

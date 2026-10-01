@@ -78,6 +78,10 @@ Add each one under **Settings → Environment Variables**, tick **Production** a
 | `PRO_UNLOCK_CODES` | Keep your existing early-supporter codes so they stay honoured | **Yes** |
 | `ADMIN_EMAILS` | Your email(s) for the admin dashboard, comma separated, e.g. `you@gmail.com` | Keep private |
 | `ANTHROPIC_API_KEY` | <https://console.anthropic.com> → Settings → API Keys → Create key (add billing credit first) | **Yes** |
+| `NEXT_PUBLIC_LEGAL_NAME` | Your registered business name, exactly as on CAC (e.g. `InCeipt Technologies Ltd`). Shown on Terms, Privacy and Refund pages | No (public) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | Support email shown on those pages (Paystack checks you have one) | No (public) |
+| `NEXT_PUBLIC_SUPPORT_PHONE` | Optional support phone number | No (public) |
+| `NEXT_PUBLIC_BUSINESS_ADDRESS` | Your business address (recommended for Paystack) | No (public) |
 | `AGENT_DAILY_LIMIT` | Optional. Assistant messages per business per day. Default 40 | No |
 | `AGENT_MODEL` | Optional. Claude model for the assistant. Default `claude-opus-5-5` | No |
 | `AGENT_EFFORT` | Optional. `low` (default, cheapest), `medium` or `high` | No |
@@ -85,7 +89,14 @@ Add each one under **Settings → Environment Variables**, tick **Production** a
 
 You can remove `NEXT_PUBLIC_PRO_PAYMENT_LINK` and `NEXT_PUBLIC_PRO_PRICE_LABEL`; they're no longer used.
 
-## 4. Admin dashboard and AI assistant
+## 4. Policy pages (needed for Paystack activation)
+
+The app has **/terms**, **/privacy** and **/refunds** pages, linked from the landing page, sign-in, the Pro
+page, the customer payment page and More. Set the four `NEXT_PUBLIC_LEGAL_*` / `SUPPORT_*` / `BUSINESS_ADDRESS`
+values above so your business name and contact details appear, then give Paystack these links during activation:
+`https://<your-domain>/terms`, `/privacy` and `/refunds`. Have a lawyer review them before launch.
+
+## 5. Admin dashboard and AI assistant
 
 - **Admin dashboard**: sign in to InCeipt with an email listed in `ADMIN_EMAILS`. More → **Admin dashboard**
   (or go to `/admin`). It shows revenue (MRR), Pro plans, sign-ups, active businesses, usage, Paystack webhook
@@ -97,7 +108,7 @@ You can remove `NEXT_PUBLIC_PRO_PAYMENT_LINK` and `NEXT_PUBLIC_PRO_PRICE_LABEL`;
   dashboard and in the Anthropic console (Usage). Set a monthly spend limit in the Anthropic console.
   If Claude declines a request, it is retried on Anthropic's recommended fallback model.
 
-## 5. Check it works (test mode first)
+## 6. Check it works (test mode first)
 
 1. Use Paystack **test** keys and test plans, redeploy the preview.
 2. More → Account → sign in with your email → code → **Create my business account** (your phone's records are copied).

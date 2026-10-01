@@ -216,6 +216,17 @@ export function ProPanel() {
               <p className="flex items-center justify-center gap-1.5 text-xs text-white/60">
                 <Lock className="size-3.5" /> Secure payment by Paystack · Cancel any time
               </p>
+              <p className="text-center text-xs text-white/60">
+                Renews automatically until you cancel. See our{" "}
+                <Link href="/terms" className="underline">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link href="/refunds" className="underline">
+                  Refund Policy
+                </Link>
+                .
+              </p>
             </>
           )}
         </div>

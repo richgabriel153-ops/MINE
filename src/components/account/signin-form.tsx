@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Mail } from "lucide-react";
@@ -107,6 +108,17 @@ export function SignInForm() {
       <Button type="submit" size="lg" disabled={busy}>
         {busy ? <Loader2 className="animate-spin" /> : <Mail />} Email me a code
       </Button>
+      <p className="text-center text-xs text-muted-foreground">
+        By continuing you agree to our{" "}
+        <Link href="/terms" className="underline">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline">
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </form>
   ) : (
     <form onSubmit={verify} noValidate className="flex flex-col gap-4">

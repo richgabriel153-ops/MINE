@@ -20,6 +20,7 @@ import {
 import { ProLock, useAccess } from "@/components/access/access-provider";
 import { AdminLink } from "@/components/admin/admin-link";
 import { PreviewLink } from "@/components/demo/preview-link";
+import { LEGAL_PAGES } from "@/lib/legal";
 import type { Permissions } from "@/lib/permissions";
 
 interface Item {
@@ -95,6 +96,13 @@ export function MoreMenu() {
       })}
       <li>
         <AdminLink signedIn={access.mode === "cloud"} />
+      </li>
+      <li className="flex justify-center gap-4 pt-4 text-sm text-muted-foreground">
+        {LEGAL_PAGES.map((p) => (
+          <Link key={p.href} href={p.href} className="underline-offset-2 hover:underline">
+            {p.label.replace(" of Service", "").replace(" Policy", "")}
+          </Link>
+        ))}
       </li>
     </ul>
   );
