@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BadgeCheck, ChevronRight, FileText, ReceiptText, ShieldCheck } from "lucide-react";
 
+import { ProLock, useAccess } from "@/components/access/access-provider";
 import { DocumentCard } from "@/components/history/document-card";
 import { InstallButton } from "@/components/pwa/install-button";
 import { Button } from "@/components/ui/button";
 import { useDocuments } from "@/hooks/use-documents";
-import { usePro } from "@/hooks/use-pro";
 import { useProfile } from "@/hooks/use-profile";
 import { lagosDate } from "@/lib/dates";
 import { getSettings } from "@/lib/db";
@@ -22,7 +22,8 @@ const BACKUP_REMINDER_DAYS = 14;
 export function HomeDashboard() {
   const [profile] = useProfile();
   const { docs } = useDocuments();
-  const [pro] = usePro();
+  const { access, showUpgrade } = useAccess();
+  const canTrackDebts = access?.can.trackDebts ?? false;
   const recent = docs?.slice(0, 5) ?? [];
   const summary = useMemo(() => (docs ? summarise(docs, lagosDate()) : null), [docs]);
   const [backupStale, setBackupStale] = useState(false);
@@ -81,23 +82,39 @@ export function HomeDashboard() {
             <div className="text-xs text-muted-foreground">Sales this month</div>
             <div className="mt-1 text-xl font-bold tabular-nums">{formatNaira(summary.monthKobo)}</div>
           </div>
+          {canTrackDebts ? (
           <Link
-            href="/history?status=owing"
-            className="col-span-2 flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-xs active:bg-muted"
-          >
-            <div className="flex-1">
-              <div className="text-xs text-muted-foreground">Customers owe you</div>
-              <div className={`mt-1 text-xl font-bold tabular-nums ${summary.owingKobo > 0 ? "text-warning" : ""}`}>
-                {formatNaira(summary.owingKobo)}
+              href="/history?status=owing"
+              className="col-span-2 flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-xs active:bg-muted"
+            >
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground">Customers owe you</div>
+                <div className={`mt-1 text-xl font-bold tabular-nums ${summary.owingKobo > 0 ? "text-warning" : ""}`}>
+                  {formatNaira(summary.owingKobo)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {summary.owingCount === 0
+                    ? "Nothing outstanding"
+                    : `${summary.owingCount} unpaid or part-paid ${summary.owingCount === 1 ? "document" : "documents"}`}
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {summary.owingCount === 0
-                  ? "Nothing outstanding"
-                  : `${summary.owingCount} unpaid or part-paid ${summary.owingCount === 1 ? "document" : "documents"}`}
+              <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => showUpgrade("Debt tracking")}
+              className="col-span-2 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed bg-card p-4 text-left shadow-xs"
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  Customers owe you <ProLock />
+                </div>
+                <div className="mt-1 text-sm font-medium">See who owes you money and record part payments with Pro.</div>
               </div>
-            </div>
-            <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
-          </Link>
+              <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
+            </button>
+          )}
           <p className="col-span-2 -mt-1 text-xs text-muted-foreground">
             Sales = money received, by receipt date. Weeks start on Monday.
           </p>
@@ -146,7 +163,7 @@ export function HomeDashboard() {
 
       <InstallButton className="w-full" />
 
-      {pro && !pro.unlocked && (
+      {access && !access.isPro && (
         <Link href="/pro" className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm shadow-xs">
           <BadgeCheck className="size-6 shrink-0 text-primary" />
           <span className="flex-1">

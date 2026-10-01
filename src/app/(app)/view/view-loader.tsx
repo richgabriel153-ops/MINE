@@ -13,13 +13,14 @@ import { getTemplate } from "@/components/templates";
 import { ScaledPreview } from "@/components/templates/scaled-preview";
 import { TemplatePicker } from "@/components/templates/template-picker";
 import { Button } from "@/components/ui/button";
-import { getDocument, getProfile, getProStatus, setDocumentTemplate, updateSettings } from "@/lib/db";
+import { useAccess } from "@/components/access/access-provider";
+import { getDocument, getProfile, setDocumentTemplate, updateSettings } from "@/lib/db";
 import type { BusinessProfile, DocumentRecord, TemplateId } from "@/lib/types";
 
 type Loaded =
   | { state: "loading" }
   | { state: "missing" }
-  | { state: "ready"; doc: DocumentRecord; profile: BusinessProfile; isPro: boolean };
+  | { state: "ready"; doc: DocumentRecord; profile: BusinessProfile };
 
 export function ViewLoader() {
   const id = useSearchParams().get("id");
@@ -28,15 +29,16 @@ export function ViewLoader() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const [doc, profile, pro] = await Promise.all([id ? getDocument(id) : undefined, getProfile(), getProStatus()]);
-      if (active) setLoaded(doc ? { state: "ready", doc, profile, isPro: pro.unlocked } : { state: "missing" });
+      const [doc, profile] = await Promise.all([id ? getDocument(id) : undefined, getProfile()]);
+      if (active) setLoaded(doc ? { state: "ready", doc, profile } : { state: "missing" });
     })();
     return () => {
       active = false;
     };
   }, [id]);
 
-  if (loaded.state === "loading") return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
+  const { access } = useAccess();
+  if (loaded.state === "loading" || !access) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
 
   if (loaded.state === "missing")
     return (
@@ -51,7 +53,7 @@ export function ViewLoader() {
       </>
     );
 
-  return <DocumentView key={loaded.doc.id} initialDoc={loaded.doc} profile={loaded.profile} isPro={loaded.isPro} />;
+  return <DocumentView key={loaded.doc.id} initialDoc={loaded.doc} profile={loaded.profile} isPro={access.isPro} />;
 }
 
 function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentRecord; profile: BusinessProfile; isPro: boolean }) {

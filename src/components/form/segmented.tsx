@@ -1,5 +1,7 @@
 "use client";
 
+import { Lock } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 /** A row of big buttons where exactly one is chosen (radio group). */
@@ -12,7 +14,8 @@ export function Segmented<T extends string>({
 }: {
   value: T;
   onChange: (value: T) => void;
-  options: readonly { value: T; label: string }[];
+  /** `locked` options show a lock (e.g. Pro-only); tapping them still calls onChange. */
+  options: readonly { value: T; label: string; locked?: boolean }[];
   label: string;
   className?: string;
 }) {
@@ -37,7 +40,10 @@ export function Segmented<T extends string>({
               selected && "bg-card text-foreground shadow-sm",
             )}
           >
-            {o.label}
+            <span className="inline-flex items-center gap-1">
+              {o.label}
+              {o.locked && <Lock className="size-3.5 text-[#8a6a2b]" aria-label="Pro" />}
+            </span>
           </button>
         );
       })}

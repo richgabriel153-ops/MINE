@@ -11,7 +11,7 @@ import { DocumentCard } from "@/components/history/document-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDocuments } from "@/hooks/use-documents";
-import { usePro } from "@/hooks/use-pro";
+import { ProLock, useAccess } from "@/components/access/access-provider";
 import { filterDocuments, monthLabel, type StatusFilter, type TypeFilter } from "@/lib/history-filter";
 import { formatNaira } from "@/lib/money";
 import { FREE_HISTORY_LIMIT } from "@/lib/pro";
@@ -56,18 +56,20 @@ function groupByMonth(docs: DocumentRecord[]) {
 
 export function HistoryList() {
   const { docs: allDocs, reload } = useDocuments();
-  const [pro] = usePro();
+  const { access, showUpgrade } = useAccess();
+  const canTrackDebts = access?.can.trackDebts ?? false;
   // Free version shows the newest FREE_HISTORY_LIMIT documents; the rest stay saved and in backups.
-  const limited = pro !== null && !pro.unlocked && allDocs !== null && allDocs.length > FREE_HISTORY_LIMIT;
+  const limited = access !== null && !access.can.unlimitedHistory && allDocs !== null && allDocs.length > FREE_HISTORY_LIMIT;
   const docs = useMemo(
-    () => (allDocs && pro !== null ? (limited ? allDocs.slice(0, FREE_HISTORY_LIMIT) : allDocs) : null),
-    [allDocs, pro, limited],
+    () => (allDocs && access !== null ? (limited ? allDocs.slice(0, FREE_HISTORY_LIMIT) : allDocs) : null),
+    [allDocs, access, limited],
   );
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const query = params.get("q") ?? "";
-  const status = readStatus(params.get("status"));
+  const requestedStatus = readStatus(params.get("status"));
+  const status: StatusFilter = requestedStatus === "owing" && !canTrackDebts ? "all" : requestedStatus;
   const type = readType(params.get("type"));
 
   // Filters live in the address, so Back returns to the same view.
@@ -134,20 +136,25 @@ export function HistoryList() {
             type="button"
             role="radio"
             aria-checked={status === c.value}
-            onClick={() => setParam("status", c.value, "all")}
+            onClick={() =>
+              c.value === "owing" && !canTrackDebts ? showUpgrade("Debt tracking") : setParam("status", c.value, "all")
+            }
             className={cn(
               "h-10 shrink-0 cursor-pointer rounded-full border px-4 text-sm font-medium whitespace-nowrap",
               status === c.value ? "border-primary bg-primary text-primary-foreground" : "bg-card",
             )}
           >
-            {c.label}
+            <span className="inline-flex items-center gap-1">
+              {c.label}
+              {c.value === "owing" && !canTrackDebts && <ProLock />}
+            </span>
           </button>
         ))}
       </div>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {filtered.length} {filtered.length === 1 ? "result" : "results"}
-        {owingTotal > 0 && (status === "owing" || status === "unpaid" || status === "part") && (
+        {canTrackDebts && owingTotal > 0 && (status === "owing" || status === "unpaid" || status === "part") && (
           <> · {formatNaira(owingTotal)} owed</>
         )}
       </p>

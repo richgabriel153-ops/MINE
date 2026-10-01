@@ -2,6 +2,7 @@
 export const FREE_HISTORY_LIMIT = 50;
 
 export const PRO_BENEFITS = [
+  { title: "Track who owes you", text: "Record part payments and see every outstanding balance in one place." },
   { title: "Your brand only", text: "Remove the “Made with InCeipt” line from every receipt and invoice." },
   { title: "2 premium templates", text: "Bold and Elegant designs, on top of the 3 free ones." },
   { title: "Unlimited history", text: `Search all your records, not just the latest ${FREE_HISTORY_LIMIT}.` },
@@ -11,6 +12,7 @@ export const PRO_BENEFITS = [
 export const PRO_COMPARISON: { feature: string; free: string | boolean; pro: string | boolean }[] = [
   { feature: "Receipts & invoices", free: "Unlimited", pro: "Unlimited" },
   { feature: "Send on WhatsApp, PNG & PDF", free: true, pro: true },
+  { feature: "Part payments & money owed", free: false, pro: true },
   { feature: "Templates", free: "3", pro: "5" },
   { feature: "“Made with InCeipt” line", free: "Shown", pro: "Removed" },
   { feature: "History you can see", free: `Latest ${FREE_HISTORY_LIMIT}`, pro: "Everything" },

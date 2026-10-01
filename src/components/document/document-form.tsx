@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Store } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAccess } from "@/components/access/access-provider";
 import { LineItemsEditor } from "@/components/document/line-items-editor";
 import { TotalsPanel } from "@/components/document/totals-panel";
 import { Field } from "@/components/form/field";
@@ -78,6 +79,10 @@ export function DocumentForm({
   profile: BusinessProfile;
 }) {
   const router = useRouter();
+  const { access, requirePro } = useAccess();
+  const canTrackDebts = access?.can.trackDebts ?? false;
+  // Free users keep read-only access to part payments recorded before debt tracking became Pro.
+  const legacyPartPayment = !canTrackDebts && initial.status === "part";
   const [form, setForm] = useState(initial);
   // Errors appear after the first Save attempt, then update live as the user fixes things.
   const [triedSave, setTriedSave] = useState(false);
@@ -244,8 +249,11 @@ export function DocumentForm({
         <Segmented
           label="Payment status"
           value={form.status}
-          onChange={(v) => set("status", v)}
-          options={STATUS_OPTIONS}
+          onChange={(v) => {
+            if (v === "part" && !canTrackDebts && !legacyPartPayment && !requirePro("Part payments")) return;
+            set("status", v);
+          }}
+          options={STATUS_OPTIONS.map((o) => (o.value === "part" && !canTrackDebts ? { ...o, locked: true } : o))}
         />
         {form.status === "part" && (
           <Field
@@ -259,7 +267,14 @@ export function DocumentForm({
               value={form.amountPaidKobo}
               onChange={(v) => set("amountPaidKobo", v)}
               invalid={!!errors.amountPaid}
+              disabled={legacyPartPayment}
             />
+            {legacyPartPayment && (
+              <p className="text-sm text-muted-foreground">
+                Recording part payments is now a Pro feature. You can still see this balance, or choose{" "}
+                <strong>Paid</strong> once the customer pays in full.
+              </p>
+            )}
           </Field>
         )}
         {form.status !== "unpaid" && (
