@@ -6,7 +6,6 @@ function Toaster(props: ToasterProps) {
   return (
     <Sonner
       position="top-center"
-      richColors
       closeButton={false}
       toastOptions={{ className: "text-base" }}
       {...props}

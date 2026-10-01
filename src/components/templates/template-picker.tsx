@@ -42,7 +42,7 @@ export function TemplatePicker({
               <span className="size-2.5 rounded-full" style={{ backgroundColor: brandColor }} aria-hidden />
               {t.name}
               {t.pro && (
-                <span className="ml-auto flex items-center gap-0.5 rounded bg-amber-100 px-1 text-[9px] font-bold text-amber-800">
+                <span className="ml-auto flex items-center gap-0.5 rounded bg-highlight/25 px-1 text-[9px] font-bold text-[#5a4210]">
                   {locked && <Lock className="size-2.5" aria-hidden />}PRO
                 </span>
               )}

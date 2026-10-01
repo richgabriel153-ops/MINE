@@ -153,7 +153,7 @@ export function HistoryList() {
       </p>
 
       {limited && (
-        <Link href="/pro" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        <Link href="/pro" className="rounded-xl border border-highlight/50 bg-highlight/10 p-3 text-sm text-[#5a4210]">
           Showing your latest {FREE_HISTORY_LIMIT} of {allDocs?.length} records. Older ones are safe on this phone and in
           your backups. <span className="font-semibold underline">Go Pro to see them all.</span>
         </Link>

@@ -10,7 +10,7 @@ export const SAMPLE_PROFILE: BusinessProfile = {
   bankName: "GTBank",
   accountName: "Ada's Fashion House",
   accountNumber: "0123456789",
-  brandColor: "#0b7a4b",
+  brandColor: "#3e4580",
 };
 
 export const SAMPLE_RECEIPT: DocumentRecord = {

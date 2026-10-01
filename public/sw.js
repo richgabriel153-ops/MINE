@@ -7,7 +7,7 @@
  *   even if it hasn't been opened yet.
  * - /api is never cached.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const PAGE_CACHE = `pages-${VERSION}`;
 const ASSET_CACHE = `assets-${VERSION}`;
 const PAGES = ["/", "/home", "/create", "/view", "/history", "/profile", "/settings", "/pro"];

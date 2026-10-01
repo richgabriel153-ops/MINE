@@ -23,8 +23,8 @@ export const STATUS_LABEL: Record<PaymentStatus, string> = {
 };
 
 export const STATUS_COLOUR: Record<PaymentStatus, string> = {
-  paid: "#0b7a4b",
-  part: "#b45309",
+  paid: "#3e4580",
+  part: "#a8641a",
   unpaid: "#b91c1c",
 };
 

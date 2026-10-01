@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
 import { BACKUP_APP, BACKUP_VERSION, planImport, type BackupFile, type ImportMode, type ImportPlan } from "./backup";
+import { OLD_DEFAULT_BRAND_COLOR } from "./brand";
 import { newId } from "./id";
 import { formatDocNumber, type Counters } from "./numbering";
 import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type PaymentMethod, type TemplateId } from "./types";
@@ -46,7 +47,10 @@ function getDb() {
 export async function getProfile(): Promise<BusinessProfile> {
   const db = await getDb();
   const saved = (await db.get("meta", "profile")) as Partial<BusinessProfile> | undefined;
-  return { ...EMPTY_PROFILE, ...saved };
+  const profile = { ...EMPTY_PROFILE, ...saved };
+  // Moved from green to indigo; anyone still on the old default gets the new one.
+  if (profile.brandColor.toLowerCase() === OLD_DEFAULT_BRAND_COLOR) profile.brandColor = EMPTY_PROFILE.brandColor;
+  return profile;
 }
 
 export async function saveProfile(profile: BusinessProfile): Promise<void> {

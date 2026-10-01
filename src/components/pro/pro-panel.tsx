@@ -17,9 +17,10 @@ import { formatDate, lagosDate } from "@/lib/dates";
 import { setProUnlocked } from "@/lib/db";
 import { paymentLink, priceLabel, PRO_BENEFITS, PRO_COMPARISON } from "@/lib/pro";
 import { SAMPLE_PROFILE, SAMPLE_RECEIPT } from "@/lib/sample";
+import { BRAND } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-const GOLD = "#f2b705";
+const GOLD = BRAND.amber;
 
 const FAQ = [
   {
@@ -52,7 +53,7 @@ function Cell({ value, pro }: { value: string | boolean; pro?: boolean }) {
 function ProBadge({ className }: { className?: string }) {
   return (
     <span
-      className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tracking-wide text-[#3d2c00]", className)}
+      className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tracking-wide text-[#33250a]", className)}
       style={{ backgroundColor: GOLD }}
     >
       <Sparkles className="size-3.5" /> PRO
@@ -103,7 +104,7 @@ export function ProPanel() {
   if (pro.unlocked) {
     return (
       <div className="flex flex-col gap-5">
-        <section className="relative overflow-hidden rounded-3xl bg-[#0c1f17] p-6 text-white shadow-lg">
+        <section className="relative overflow-hidden rounded-3xl bg-[#1c1e33] p-6 text-white shadow-lg">
           <div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-primary/40 blur-3xl" />
           <ProBadge />
           <h2 className="mt-4 text-2xl leading-tight font-bold">You&apos;re on InCeipt Pro</h2>
@@ -136,7 +137,7 @@ export function ProPanel() {
   return (
     <div className="flex flex-col gap-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-[#0c1f17] px-5 pt-6 pb-7 text-white shadow-lg">
+      <section className="relative overflow-hidden rounded-3xl bg-[#1c1e33] px-5 pt-6 pb-7 text-white shadow-lg">
         <div className="pointer-events-none absolute -top-20 -right-20 size-56 rounded-full bg-primary/50 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-16 size-48 rounded-full blur-3xl" style={{ backgroundColor: `${GOLD}33` }} />
         <div className="relative">
@@ -156,7 +157,7 @@ export function ProPanel() {
             <Button
               asChild
               size="lg"
-              className="mt-5 h-14 w-full text-base font-bold text-[#3d2c00] hover:opacity-95"
+              className="mt-5 h-14 w-full text-base font-bold text-[#33250a] hover:opacity-95"
               style={{ backgroundColor: GOLD }}
             >
               <a href={link} target="_blank" rel="noopener noreferrer">
