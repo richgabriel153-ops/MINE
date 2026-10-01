@@ -15,6 +15,7 @@ import {
   TEMPLATE_FONT,
   type TemplateProps,
 } from "./shared";
+import { PayNowBlock } from "./pay-now-block";
 
 export const COMPACT_WIDTH = 420;
 
@@ -23,7 +24,7 @@ function Dashes() {
 }
 
 /** Compact: narrow till-slip style. Reads well on a phone screen and makes the smallest images. */
-export function CompactTemplate({ doc, profile, showFooterBrand }: TemplateProps) {
+export function CompactTemplate({ doc, profile, showFooterBrand, payNow }: TemplateProps) {
   const brandText = brandTextColour(profile.brandColor);
   const totals = computeTotals(doc);
   const isInvoice = doc.type === "invoice";
@@ -120,6 +121,7 @@ export function CompactTemplate({ doc, profile, showFooterBrand }: TemplateProps
         )}
       </div>
 
+      {payNow && <PayNowBlock url={payNow.url} qr={payNow.qr} colour={brandText} />}
       {showsBankDetails(doc, profile) && (
         <>
           <Dashes />

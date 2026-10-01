@@ -24,17 +24,20 @@ export function ShareBar({
   profile,
   exportRef,
   renderKey,
+  payLink,
 }: {
   doc: DocumentRecord;
   profile: BusinessProfile;
   exportRef: RefObject<HTMLDivElement | null>;
   /** Changes whenever what's drawn changes (e.g. a different template). */
   renderKey: string;
+  /** Pay Now link to include in the message and PDF. */
+  payLink?: string | null;
 }) {
   const prepared = usePreparedImage(exportRef, renderKey);
   const [busy, setBusy] = useState<"png" | "pdf" | null>(null);
   const [fallbackOpen, setFallbackOpen] = useState(false);
-  const message = shareMessage(doc, profile);
+  const message = shareMessage(doc, profile, payLink);
   const kind = doc.type === "invoice" ? "invoice" : "receipt";
 
   async function onShare() {
@@ -68,7 +71,7 @@ export function ShareBar({
     setBusy("pdf");
     try {
       const { canvasToPdf } = await import("@/lib/export-pdf");
-      const pdf = await canvasToPdf(prepared.canvas);
+      const pdf = await canvasToPdf(prepared.canvas, payLink);
       downloadBlob(pdf, exportFileName(doc, profile, "pdf"));
       toast.success(`PDF saved (${formatFileSize(pdf.size)})`);
     } catch {

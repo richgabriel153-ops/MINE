@@ -71,3 +71,13 @@ describe("greetingName", () => {
     ["Oga", "Oga"],
   ])("%s → %s", (input, expected) => expect(greetingName(input)).toBe(expected));
 });
+
+describe("shareMessage with a Pay Now link", () => {
+  it("adds the link when money is owed", () => {
+    const m = shareMessage({ ...doc, type: "invoice", status: "unpaid" }, profile, "https://inceipt.app/pay?t=abc");
+    expect(m).toContain("Pay online (card, transfer or USSD): https://inceipt.app/pay?t=abc");
+  });
+  it("leaves it out once paid", () => {
+    expect(shareMessage(doc, profile, "https://inceipt.app/pay?t=abc")).not.toContain("Pay online");
+  });
+});

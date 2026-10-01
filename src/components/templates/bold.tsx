@@ -15,9 +15,10 @@ import {
   TEMPLATE_WIDTH,
   type TemplateProps,
 } from "./shared";
+import { PayNowBlock } from "./pay-now-block";
 
 /** Bold (Pro): full brand-colour page top, big type, striped item rows. */
-export function BoldTemplate({ doc, profile, showFooterBrand }: TemplateProps) {
+export function BoldTemplate({ doc, profile, showFooterBrand, payNow }: TemplateProps) {
   const brand = profile.brandColor;
   const onBrand = readableTextOn(brand);
   const totals = computeTotals(doc);
@@ -113,6 +114,7 @@ export function BoldTemplate({ doc, profile, showFooterBrand }: TemplateProps) {
           </div>
         )}
 
+        {payNow && <PayNowBlock url={payNow.url} qr={payNow.qr} colour={brand} />}
         {showsBankDetails(doc, profile) && (
           <div style={{ borderColor: brand }} className="mt-5 rounded-xl border-2 px-5 py-3.5">
             <div className="text-[10.5px] font-semibold tracking-wider text-[#6b7280] uppercase">Pay to</div>

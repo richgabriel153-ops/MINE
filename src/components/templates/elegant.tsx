@@ -15,9 +15,10 @@ import {
   TEMPLATE_WIDTH,
   type TemplateProps,
 } from "./shared";
+import { PayNowBlock } from "./pay-now-block";
 
 /** Elegant (Pro): centred, airy, thin lines and spaced capitals. Suits fashion and beauty. */
-export function ElegantTemplate({ doc, profile, showFooterBrand }: TemplateProps) {
+export function ElegantTemplate({ doc, profile, showFooterBrand, payNow }: TemplateProps) {
   const accent = brandTextColour(profile.brandColor);
   const totals = computeTotals(doc);
   const isInvoice = doc.type === "invoice";
@@ -108,6 +109,7 @@ export function ElegantTemplate({ doc, profile, showFooterBrand }: TemplateProps
       </div>
       {doc.sourceInvoiceNumber && <div className="text-center text-[11px] text-[#9ca3af]">For invoice {doc.sourceInvoiceNumber}</div>}
 
+      {payNow && <PayNowBlock url={payNow.url} qr={payNow.qr} colour={accent} />}
       {showsBankDetails(doc, profile) && (
         <div className="mt-4 text-center">
           <div className="text-[10.5px] tracking-[0.3em] text-[#9ca3af] uppercase">Payment details</div>

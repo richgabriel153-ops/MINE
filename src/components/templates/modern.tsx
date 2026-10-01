@@ -16,9 +16,10 @@ import {
   TEMPLATE_WIDTH,
   type TemplateProps,
 } from "./shared";
+import { PayNowBlock } from "./pay-now-block";
 
 /** Modern: white page, brand stripe on the left, big amount up top, items as a clean list. */
-export function ModernTemplate({ doc, profile, showFooterBrand }: TemplateProps) {
+export function ModernTemplate({ doc, profile, showFooterBrand, payNow }: TemplateProps) {
   const brand = profile.brandColor;
   const brandText = brandTextColour(brand);
   const onBrand = readableTextOn(brand);
@@ -137,6 +138,7 @@ export function ModernTemplate({ doc, profile, showFooterBrand }: TemplateProps)
           </div>
         )}
 
+        {payNow && <PayNowBlock url={payNow.url} qr={payNow.qr} colour={brandText} />}
         {showsBankDetails(doc, profile) && (
           <div style={{ backgroundColor: brand, color: onBrand }} className="mt-5 rounded-xl px-5 py-3.5">
             <div className="text-[10.5px] font-semibold tracking-wider uppercase opacity-80">Pay by transfer</div>

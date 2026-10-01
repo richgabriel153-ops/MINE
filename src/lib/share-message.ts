@@ -21,7 +21,7 @@ export function greetingName(fullName: string): string {
 }
 
 /** The friendly message that goes with the image on WhatsApp. */
-export function shareMessage(doc: DocumentRecord, profile: BusinessProfile): string {
+export function shareMessage(doc: DocumentRecord, profile: BusinessProfile, payLink?: string | null): string {
   const totals = computeTotals(doc);
   const name = greetingName(doc.customer.name);
   const greeting = name ? `Hello ${name},` : "Hello,";
@@ -38,6 +38,7 @@ export function shareMessage(doc: DocumentRecord, profile: BusinessProfile): str
       lines.push(`Pay to: ${profile.bankName} ${profile.accountNumber}${name}`);
     }
   }
+  if (payLink && totals.balanceKobo > 0) lines.push(`Pay online (card, transfer or USSD): ${payLink}`);
   lines.push("Thank you!");
   return lines.join("\n");
 }

@@ -13,6 +13,8 @@ export interface CloudAccount {
   billingStatus: string | null;
   periodEnd: string | null;
   pendingPlan: "monthly" | "yearly" | null;
+  /** Online payments set up (Pay Now links can be added). */
+  payoutsConnected: boolean;
 }
 
 export interface Access {
@@ -42,6 +44,7 @@ export async function loadAccess(): Promise<Access> {
         billingStatus: a.status,
         periodEnd: a.current_period_end,
         pendingPlan: a.pending_plan,
+        payoutsConnected: Boolean(a.payouts_connected),
       };
       const blocked = !a.role
         ? a.member_status === "deactivated"
@@ -65,7 +68,7 @@ export async function loadAccess(): Promise<Access> {
         proSource: null,
         role: "staff",
         can: permissionsFor("staff", false),
-        cloud: { email: ctx.email, businessId: ctx.businessId, plan: null, billingStatus: null, periodEnd: null, pendingPlan: null },
+        cloud: { email: ctx.email, businessId: ctx.businessId, plan: null, billingStatus: null, periodEnd: null, pendingPlan: null, payoutsConnected: false },
         blocked: "You're offline. Your business records are in your InCeipt account, so connect to the internet to continue.",
         offline: true,
       };

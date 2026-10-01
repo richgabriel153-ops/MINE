@@ -15,9 +15,10 @@ import {
   TEMPLATE_WIDTH,
   type TemplateProps,
 } from "./shared";
+import { PayNowBlock } from "./pay-now-block";
 
 /** Classic: brand-coloured header band, clear table, totals on the right. */
-export function ClassicTemplate({ doc, profile, showFooterBrand }: TemplateProps) {
+export function ClassicTemplate({ doc, profile, showFooterBrand, payNow }: TemplateProps) {
   const brand = profile.brandColor;
   const onBrand = readableTextOn(brand);
   const brandText = brandTextColour(brand);
@@ -148,6 +149,7 @@ export function ClassicTemplate({ doc, profile, showFooterBrand }: TemplateProps
         )}
 
         {/* Bank details for invoices */}
+        {payNow && <PayNowBlock url={payNow.url} qr={payNow.qr} colour={brandText} />}
         {isInvoice && doc.status !== "paid" && hasBankDetails(profile) && (
           <div
             style={{ borderColor: withAlpha(brand, 0.4), backgroundColor: withAlpha(brand, 0.06) }}

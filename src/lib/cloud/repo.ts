@@ -167,6 +167,19 @@ export interface MyAccess {
   status: string | null;
   current_period_end: string | null;
   pending_plan: "monthly" | "yearly" | null;
+  payouts_connected?: boolean;
+}
+
+/** Add a Pay Now link to an invoice; returns the link code. */
+export async function createPayLink(documentId: string): Promise<string> {
+  try {
+    return await call<string>("create_pay_link", { p_doc_id: documentId });
+  } catch (err) {
+    const m = err instanceof Error ? err.message : "";
+    if (/payouts_not_connected/.test(m)) throw new Error("Online payments aren't set up for this business yet.");
+    if (/nothing_to_pay/.test(m)) throw new Error("This invoice is already fully paid.");
+    throw err;
+  }
 }
 
 export async function myAccess(businessId: string): Promise<MyAccess> {

@@ -8,6 +8,7 @@ import { CheckCircle2, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import { DeleteDialog } from "@/components/document/delete-dialog";
 import { canMarkPaid, MarkPaidDialog } from "@/components/document/mark-paid-dialog";
 import { PageHeader } from "@/components/layout/page-header";
+import { PayLinkPanel } from "@/components/share/pay-link-panel";
 import { ShareBar } from "@/components/share/share-bar";
 import { getTemplate } from "@/components/templates";
 import { ScaledPreview } from "@/components/templates/scaled-preview";
@@ -15,6 +16,8 @@ import { TemplatePicker } from "@/components/templates/template-picker";
 import { Button } from "@/components/ui/button";
 import { useAccess } from "@/components/access/access-provider";
 import { getDocument, getProfile, setDocumentTemplate, updateSettings } from "@/lib/db";
+import { payUrl, showsPayLink } from "@/lib/pay-link";
+import { computeTotals } from "@/lib/totals";
 import type { BusinessProfile, DocumentRecord, TemplateId } from "@/lib/types";
 
 type Loaded =
@@ -64,6 +67,24 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const balance = computeTotals(doc).balanceKobo;
+  const linkUrl = doc.payToken && typeof window !== "undefined" ? payUrl(doc.payToken, window.location.origin) : null;
+  const showLink = showsPayLink(doc, balance) && linkUrl !== null;
+  const [qr, setQr] = useState<{ url: string; data: string } | null>(null);
+  useEffect(() => {
+    if (!showLink || !linkUrl) return;
+    let active = true;
+    import("qrcode")
+      .then((QR) => QR.toDataURL(linkUrl, { margin: 1, width: 168, errorCorrectionLevel: "M" }))
+      .then((data) => {
+        if (active) setQr({ url: linkUrl, data });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [showLink, linkUrl]);
+  const payNow = showLink && linkUrl ? { url: linkUrl, qr: qr?.url === linkUrl ? qr.data : undefined } : undefined;
   const template = getTemplate(doc.templateId, isPro);
   const Template = template.Component;
   const showFooterBrand = !isPro;
@@ -106,9 +127,18 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
           isPro={isPro}
         />
         <ScaledPreview width={template.width}>
-          <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} />
+          <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} payNow={payNow} />
         </ScaledPreview>
-        <ShareBar doc={doc} profile={profile} exportRef={exportRef} renderKey={`${doc.id}:${doc.templateId}:${doc.updatedAt}`} />
+        {doc.type === "invoice" && balance > 0 && (
+          <PayLinkPanel doc={doc} url={showLink ? linkUrl : null} onLinked={(token) => setDoc((d) => ({ ...d, payToken: token }))} />
+        )}
+        <ShareBar
+          doc={doc}
+          profile={profile}
+          exportRef={exportRef}
+          renderKey={`${doc.id}:${doc.templateId}:${doc.updatedAt}:${payNow ? `${payNow.url}:${payNow.qr ? 1 : 0}` : ""}`}
+          payLink={payNow?.url}
+        />
         <div className="grid grid-cols-2 gap-3">
           {canEdit ? (
             <Button asChild variant="outline">
@@ -145,7 +175,7 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
       {/* Full-size copy, off screen, used to make the image and PDF. */}
       <div aria-hidden className="pointer-events-none fixed top-0 -left-[10000px]">
         <div ref={exportRef} style={{ width: template.width }}>
-          <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} />
+          <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} payNow={payNow} />
         </div>
       </div>
     </>

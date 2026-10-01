@@ -52,6 +52,8 @@ export interface DocumentRecord {
   receiptId?: string;
   /** Account records: who created it. */
   createdByName?: string;
+  /** Pay Now link code (invoices, Pro). */
+  payToken?: string;
 }
 
 /** What the create form edits: everything except fields the app assigns. */

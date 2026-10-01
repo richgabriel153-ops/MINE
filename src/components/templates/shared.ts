@@ -14,6 +14,8 @@ export interface TemplateProps {
   profile: BusinessProfile;
   /** Free version shows "Made with InCeipt". */
   showFooterBrand: boolean;
+  /** Pay Now link (invoices with money owed), with its QR code as a data: URL. */
+  payNow?: { url: string; qr?: string };
 }
 
 export const STATUS_LABEL: Record<PaymentStatus, string> = {
