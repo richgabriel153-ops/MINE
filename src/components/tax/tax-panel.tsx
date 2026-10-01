@@ -24,18 +24,8 @@ import {
   type BusinessKind,
   type TaxProfile,
 } from "@/lib/tax";
+import { loadTaxProfile, saveTaxProfile } from "@/lib/tax-profile";
 import { cn } from "@/lib/utils";
-
-const PROFILE_KEY = "inceipt.tax-profile";
-
-function loadTaxProfile(): TaxProfile {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? { ...DEFAULT_TAX_PROFILE, ...(JSON.parse(raw) as Partial<TaxProfile>) } : DEFAULT_TAX_PROFILE;
-  } catch {
-    return DEFAULT_TAX_PROFILE;
-  }
-}
 
 interface Data {
   sales: DatedAmount[];
@@ -88,11 +78,7 @@ export function TaxPanel() {
   const update = (patch: Partial<TaxProfile>) => {
     setProfile((p) => {
       const next = { ...(p ?? DEFAULT_TAX_PROFILE), ...patch };
-      try {
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
-      } catch {
-        // Private browsing: the settings just won't be remembered.
-      }
+      saveTaxProfile(next);
       return next;
     });
   };

@@ -14,7 +14,7 @@ const ITEMS = [
 ] as const;
 
 /** Pages reached from the More tab. */
-const MORE_PAGES = ["/profile", "/settings", "/account", "/signin", "/pro", "/quotes", "/expenses", "/profit", "/payouts", "/staff", "/activity"];
+const MORE_PAGES = ["/profile", "/settings", "/account", "/signin", "/pro", "/quotes", "/expenses", "/profit", "/payouts", "/staff", "/activity", "/tax", "/assistant", "/admin"];
 
 export function BottomNav() {
   const pathname = usePathname();
