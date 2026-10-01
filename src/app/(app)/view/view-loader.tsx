@@ -58,6 +58,8 @@ export function ViewLoader() {
 
 function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentRecord; profile: BusinessProfile; isPro: boolean }) {
   const router = useRouter();
+  const { access, showOwnerOnly } = useAccess();
+  const canEdit = access?.can.editRecords ?? false;
   const [doc, setDoc] = useState(initialDoc);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -108,11 +110,20 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
         </ScaledPreview>
         <ShareBar doc={doc} profile={profile} exportRef={exportRef} renderKey={`${doc.id}:${doc.templateId}:${doc.updatedAt}`} />
         <div className="grid grid-cols-2 gap-3">
-          <Button asChild variant="outline">
-            <Link href={`/create?edit=${doc.id}`}>
+          {canEdit ? (
+            <Button asChild variant="outline">
+              <Link href={`/create?edit=${doc.id}`}>
+                <Pencil /> Edit
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => showOwnerOnly("Only the business owner can edit past records. Make a copy instead if you need a new one.")}
+            >
               <Pencil /> Edit
-            </Link>
-          </Button>
+            </Button>
+          )}
           <Button asChild variant="outline">
             <Link href={`/create?duplicate=${doc.id}`}>
               <Copy /> Make a copy

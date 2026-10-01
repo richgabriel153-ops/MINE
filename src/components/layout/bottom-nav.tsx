@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History, Home, PlusCircle, Store } from "lucide-react";
+import { History, Home, LayoutGrid, PlusCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,8 +10,11 @@ const ITEMS = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/create", label: "New", icon: PlusCircle },
   { href: "/history", label: "History", icon: History },
-  { href: "/profile", label: "Business", icon: Store },
+  { href: "/more", label: "More", icon: LayoutGrid },
 ] as const;
+
+/** Pages reached from the More tab. */
+const MORE_PAGES = ["/profile", "/settings", "/account", "/signin", "/pro", "/quotes", "/expenses", "/profit", "/payouts", "/staff", "/activity"];
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -28,7 +31,9 @@ export function BottomNav() {
       <ul className="mx-auto grid max-w-2xl grid-cols-4">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const active =
-            pathname === href || pathname.startsWith(`${href}/`) || (href === "/profile" && pathname === "/settings");
+            pathname === href ||
+            pathname.startsWith(`${href}/`) ||
+            (href === "/more" && MORE_PAGES.some((p) => pathname.startsWith(p)));
           return (
             <li key={href}>
               <Link

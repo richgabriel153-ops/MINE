@@ -50,6 +50,8 @@ export interface DocumentRecord {
   sourceInvoiceNumber?: string;
   /** For an invoice that was marked as paid. */
   receiptId?: string;
+  /** Account records: who created it. */
+  createdByName?: string;
 }
 
 /** What the create form edits: everything except fields the app assigns. */

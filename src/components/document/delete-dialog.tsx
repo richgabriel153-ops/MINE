@@ -28,8 +28,9 @@ export function DeleteDialog({
       toast.success(`${doc.number} deleted`);
       onOpenChange(false);
       onDeleted();
-    } catch {
-      toast.error("Could not delete. Please try again.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete. Please try again.");
+      onOpenChange(false);
     } finally {
       setBusy(false);
     }

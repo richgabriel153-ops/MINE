@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Copy, Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
+import { useAccess } from "@/components/access/access-provider";
 import { DeleteDialog } from "@/components/document/delete-dialog";
 import { canMarkPaid, MarkPaidDialog } from "@/components/document/mark-paid-dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ const itemClass =
 
 /** The ⋮ button on a history row, opening a sheet of big, thumb-friendly actions. */
 export function DocumentActions({ doc, onChanged }: { doc: DocumentRecord; onChanged: () => void }) {
+  const { access, showOwnerOnly } = useAccess();
   const [sheet, setSheet] = useState(false);
   const [markPaid, setMarkPaid] = useState(false);
   const [del, setDel] = useState(false);
@@ -51,9 +53,22 @@ export function DocumentActions({ doc, onChanged }: { doc: DocumentRecord; onCha
               <CheckCircle2 className="size-5" /> Mark as paid
             </button>
           )}
-          <Link href={`/create?edit=${doc.id}`} className={itemClass}>
-            <Pencil className="size-5 text-muted-foreground" /> Edit
-          </Link>
+          {access?.can.editRecords ? (
+            <Link href={`/create?edit=${doc.id}`} className={itemClass}>
+              <Pencil className="size-5 text-muted-foreground" /> Edit
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className={itemClass}
+              onClick={() => {
+                setSheet(false);
+                showOwnerOnly("Only the business owner can edit past records. Make a copy instead if you need a new one.");
+              }}
+            >
+              <Pencil className="size-5 text-muted-foreground" /> Edit
+            </button>
+          )}
           <Link href={`/create?duplicate=${doc.id}`} className={itemClass}>
             <Copy className="size-5 text-muted-foreground" /> Make a copy
           </Link>

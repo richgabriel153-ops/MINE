@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Lock, Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Lock, RefreshCw, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -57,9 +58,29 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
     [access, reload],
   );
 
+  const pathname = usePathname();
+  const showBlocked = access?.blocked && !["/account", "/signin"].includes(pathname);
+
   return (
     <AccessContext.Provider value={value}>
-      {children}
+      {showBlocked ? (
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-muted">
+            <Lock className="size-6 text-muted-foreground" />
+          </span>
+          <p className="max-w-sm">{access.blocked}</p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              <RefreshCw /> Try again
+            </Button>
+            <Button asChild>
+              <Link href="/account">Account</Link>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
       <Dialog open={upgradeFeature !== null} onOpenChange={(o) => !o && setUpgradeFeature(null)}>
         <DialogContent>
           <DialogHeader>

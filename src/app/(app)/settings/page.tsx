@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Backup & settings" };
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader title="Backup & settings" backHref="/profile" />
+      <PageHeader title="Backup & settings" backHref="/more" />
       <div className="flex flex-col gap-4">
         <BackupCard />
         <Link href="/pro" className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-xs">

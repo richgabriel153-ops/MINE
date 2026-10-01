@@ -72,7 +72,7 @@ export function HomeDashboard() {
         </Link>
       </div>
 
-      {summary && docs && docs.length > 0 && (
+      {summary && docs && docs.length > 0 && access?.can.viewRevenue && (
         <section aria-label="Summary" className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl border bg-card p-4 shadow-xs">
             <div className="text-xs text-muted-foreground">Sales this week</div>

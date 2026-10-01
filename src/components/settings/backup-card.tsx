@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Download, Share2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAccess } from "@/components/access/access-provider";
 import { Segmented } from "@/components/form/segmented";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,23 @@ function when(iso: string): string {
 }
 
 export function BackupCard() {
+  const { access } = useAccess();
+  if (access?.mode === "cloud")
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Backup</CardTitle>
+          <CardDescription>
+            You&apos;re signed in, so your records are saved in your InCeipt account automatically. Sign in on a new
+            phone to see them.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  return <PhoneBackupCard />;
+}
+
+function PhoneBackupCard() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
