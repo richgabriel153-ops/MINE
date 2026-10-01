@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 import { AGENT_TOOLS } from "@/lib/agent/tools";
+import { isPreviewMode } from "@/lib/server/preview";
 import { isServerCloudConfigured, json, memberRole, requestUser, supabaseAdmin } from "@/lib/server/supabase-admin";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,9 @@ How to work:
 let client: Anthropic | null = null;
 
 interface Body {
-  businessId?: string;
+  businessId?: string | null;
+  /** Pro preview on a test link: no account needed (see takePreviewMessage). */
+  preview?: boolean;
   messages?: unknown;
   context?: { today?: string; businessName?: string; userName?: string };
 }
@@ -53,7 +56,9 @@ function validMessages(raw: unknown): Anthropic.Beta.Messages.BetaMessageParam[]
 }
 
 /** Cache the conversation so far: mark the last block of the last message. */
-function withCacheMark(messages: Anthropic.Beta.Messages.BetaMessageParam[]): Anthropic.Beta.Messages.BetaMessageParam[] {
+function withCacheMark(
+  messages: Anthropic.Beta.Messages.BetaMessageParam[],
+): Anthropic.Beta.Messages.BetaMessageParam[] {
   const last = messages[messages.length - 1];
   const content: Anthropic.Beta.Messages.BetaContentBlockParam[] =
     typeof last.content === "string" ? [{ type: "text", text: last.content }] : [...last.content];
@@ -64,6 +69,24 @@ function withCacheMark(messages: Anthropic.Beta.Messages.BetaMessageParam[]): An
   return [...messages.slice(0, -1), { role: "user", content }];
 }
 
+/**
+ * Pro preview (test links only): no account, so limit by IP address and overall, in memory.
+ * Resets when the server restarts; enough to stop a test link running up a bill.
+ */
+const PREVIEW_PER_IP = 30;
+const PREVIEW_TOTAL = 300;
+const previewUse = new Map<string, number>();
+function takePreviewMessage(ip: string): number | null {
+  const day = new Date().toISOString().slice(0, 10);
+  for (const key of previewUse.keys()) if (!key.startsWith(day)) previewUse.delete(key);
+  const mine = previewUse.get(`${day}|${ip}`) ?? 0;
+  const total = previewUse.get(`${day}|*`) ?? 0;
+  if (mine >= PREVIEW_PER_IP || total >= PREVIEW_TOTAL) return null;
+  previewUse.set(`${day}|${ip}`, mine + 1);
+  previewUse.set(`${day}|*`, total + 1);
+  return PREVIEW_PER_IP - mine - 1;
+}
+
 const clean = (s: unknown, max: number) => (typeof s === "string" ? s.replace(/[\r\n]+/g, " ").slice(0, max) : "");
 
 /**
@@ -72,44 +95,67 @@ const clean = (s: unknown, max: number) => (typeof s === "string" ? s.replace(/[
  */
 export async function POST(request: Request) {
   if (!process.env.ANTHROPIC_API_KEY) return json({ error: "The assistant isn't set up yet." }, 503);
-  if (!isServerCloudConfigured()) return json({ error: "Accounts aren't set up yet." }, 503);
 
   let body: Body;
   try {
     const text = await request.text();
-    if (text.length > MAX_HISTORY_BYTES) return json({ error: "This chat is too long. Start a new chat.", code: "too_long" }, 413);
+    if (text.length > MAX_HISTORY_BYTES)
+      return json({ error: "This chat is too long. Start a new chat.", code: "too_long" }, 413);
     body = JSON.parse(text) as Body;
   } catch {
     return json({ error: "Bad request" }, 400);
   }
-  const { businessId } = body;
   const messages = validMessages(body.messages);
-  if (!businessId || !messages) return json({ error: "Bad request" }, 400);
-
-  const user = await requestUser(request);
-  if (!user) return json({ error: "Please sign in again." }, 401);
-  const role = await memberRole(user.id, businessId);
-  if (!role) return json({ error: "You don't have access to this business." }, 403);
-
-  const db = supabaseAdmin();
-  const { data: pro } = await db.rpc("is_pro", { bid: businessId });
-  if (!pro) return json({ error: "The assistant is part of InCeipt Pro.", code: "pro_required" }, 402);
-
-  // Only count a message when the person typed something (not when the phone sends tool results back).
+  if (!messages) return json({ error: "Bad request" }, 400);
   const last = messages[messages.length - 1];
+  // Only count a message when the person typed something (not when the phone sends tool results back).
   const typed = typeof last.content === "string" || last.content.some((b) => b.type === "text");
+
+  let role: "owner" | "staff" = "owner";
+  let who = "";
+  let usage: { businessId: string } | null = null;
   let remaining: number | null = null;
-  if (typed) {
-    const { data: used, error } = await db.rpc("agent_take_message", { bid: businessId, day_limit: DAILY_LIMIT });
-    if (error) return json({ error: "Something went wrong. Please try again." }, 500);
-    if (used === -1) return json({ error: `You've used today's ${DAILY_LIMIT} assistant messages. It resets at midnight.`, code: "limit" }, 429);
-    remaining = DAILY_LIMIT - Number(used);
+
+  if (body.preview && !body.businessId) {
+    if (!isPreviewMode()) return json({ error: "The assistant is part of InCeipt Pro.", code: "pro_required" }, 402);
+    if (typed) {
+      const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+      remaining = takePreviewMessage(ip);
+      if (remaining === null)
+        return json({ error: "That's the limit for the preview today. Try again tomorrow.", code: "limit" }, 429);
+    }
+  } else {
+    if (!isServerCloudConfigured()) return json({ error: "Accounts aren't set up yet." }, 503);
+    const { businessId } = body;
+    if (!businessId) return json({ error: "Bad request" }, 400);
+    const user = await requestUser(request);
+    if (!user) return json({ error: "Please sign in again." }, 401);
+    const memberRoleResult = await memberRole(user.id, businessId);
+    if (!memberRoleResult) return json({ error: "You don't have access to this business." }, 403);
+    role = memberRoleResult;
+    who = user.email ?? "";
+
+    const db = supabaseAdmin();
+    const { data: pro } = await db.rpc("is_pro", { bid: businessId });
+    if (!pro) return json({ error: "The assistant is part of InCeipt Pro.", code: "pro_required" }, 402);
+
+    if (typed) {
+      const { data: used, error } = await db.rpc("agent_take_message", { bid: businessId, day_limit: DAILY_LIMIT });
+      if (error) return json({ error: "Something went wrong. Please try again." }, 500);
+      if (used === -1)
+        return json(
+          { error: `You've used today's ${DAILY_LIMIT} assistant messages. It resets at midnight.`, code: "limit" },
+          429,
+        );
+      remaining = DAILY_LIMIT - Number(used);
+    }
+    usage = { businessId };
   }
 
   const ctx = body.context ?? {};
   const today = /^\d{4}-\d{2}-\d{2}$/.test(ctx.today ?? "") ? ctx.today! : new Date().toISOString().slice(0, 10);
   const dynamicContext = `Today is ${today} (Africa/Lagos). Business: ${clean(ctx.businessName, 80) || "(no name yet)"}. You're helping ${
-    clean(ctx.userName, 60) || user.email
+    clean(ctx.userName, 60) || who || "the owner"
   }, who is the ${role === "owner" ? "owner" : "a staff member (can make receipts, invoices and quotes and record payments; can't see totals, profit, expenses or tax)"}.`;
 
   client ??= new Anthropic();
@@ -128,15 +174,22 @@ export async function POST(request: Request) {
       messages: withCacheMark(messages),
     });
 
-    await db.rpc("agent_add_tokens", {
-      bid: businessId,
-      p_input: (response.usage.input_tokens ?? 0) + (response.usage.cache_creation_input_tokens ?? 0) + (response.usage.cache_read_input_tokens ?? 0),
-      p_output: response.usage.output_tokens ?? 0,
-    });
+    if (usage)
+      await supabaseAdmin().rpc("agent_add_tokens", {
+        bid: usage.businessId,
+        p_input:
+          (response.usage.input_tokens ?? 0) +
+          (response.usage.cache_creation_input_tokens ?? 0) +
+          (response.usage.cache_read_input_tokens ?? 0),
+        p_output: response.usage.output_tokens ?? 0,
+      });
 
     if (response.stop_reason === "refusal") {
       return json({
-        message: { content: [{ type: "text", text: "Sorry, I can't help with that. Try asking in a different way." }], stop_reason: "end_turn" },
+        message: {
+          content: [{ type: "text", text: "Sorry, I can't help with that. Try asking in a different way." }],
+          stop_reason: "end_turn",
+        },
         remaining,
         refused: true,
       });
@@ -149,7 +202,8 @@ export async function POST(request: Request) {
       console.error("assistant bad request", e.message);
       return json({ error: "Something went wrong with this chat. Start a new chat.", code: "bad_chat" }, 400);
     }
-    if (e instanceof Anthropic.APIConnectionError) return json({ error: "Couldn't reach the assistant. Please try again." }, 503);
+    if (e instanceof Anthropic.APIConnectionError)
+      return json({ error: "Couldn't reach the assistant. Please try again." }, 503);
     console.error("assistant error", e);
     return json({ error: "Something went wrong. Please try again." }, 500);
   }

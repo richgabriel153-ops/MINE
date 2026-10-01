@@ -19,6 +19,7 @@ import {
 
 import { ProLock, useAccess } from "@/components/access/access-provider";
 import { AdminLink } from "@/components/admin/admin-link";
+import { PreviewLink } from "@/components/demo/preview-link";
 import type { Permissions } from "@/lib/permissions";
 
 interface Item {
@@ -55,6 +56,11 @@ export function MoreMenu() {
 
   return (
     <ul className="flex flex-col gap-2">
+      {access.mode === "local" && (
+        <li>
+          <PreviewLink />
+        </li>
+      )}
       {ITEMS.filter((i) => !i.show || i.show(access.can, access.mode, access.role)).map((item) => {
         const locked = item.pro ? !item.pro(access.can) : false;
         const needsAccount = item.cloudOnly && access.mode === "local";

@@ -393,3 +393,9 @@ export async function setProUnlocked(): Promise<ProStatus> {
   await db.put("meta", status, "pro");
   return status;
 }
+
+/** Pro preview (test links only): switch the phone's Pro back off. */
+export async function setProLocked(): Promise<void> {
+  const db = await getDb();
+  await db.put("meta", { unlocked: false, unlockedAt: "" }, "pro");
+}

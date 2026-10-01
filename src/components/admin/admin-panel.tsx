@@ -10,6 +10,7 @@ import { PLANS } from "@/lib/billing";
 import { accessToken, isCloudConfigured } from "@/lib/cloud/client";
 import { formatDate, lagosDate } from "@/lib/dates";
 import { formatNaira } from "@/lib/money";
+import { usePreviewMode } from "@/lib/preview";
 import { cn } from "@/lib/utils";
 
 interface Overview {
@@ -67,7 +68,10 @@ interface BusinessRow {
 
 async function adminGet<T>(query: string): Promise<T> {
   const token = await accessToken();
-  const res = await fetch(`/api/admin?${query}`, { headers: token ? { Authorization: `Bearer ${token}` } : {}, cache: "no-store" });
+  const res = await fetch(`/api/admin?${query}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: "no-store",
+  });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error ?? "Couldn't load. Please try again.");
   return body as T;
@@ -88,7 +92,8 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
 
 function planLabel(b: BusinessRow): string {
   if (b.comp) return "Pro (free)";
-  if (b.is_pro && b.plan) return `Pro ${PLANS[b.plan].label.toLowerCase()}${b.billing_status === "non_renewing" ? " · cancelling" : ""}`;
+  if (b.is_pro && b.plan)
+    return `Pro ${PLANS[b.plan].label.toLowerCase()}${b.billing_status === "non_renewing" ? " · cancelling" : ""}`;
   if (b.billing_status === "attention") return "Payment failed";
   return "Free";
 }
@@ -102,6 +107,16 @@ export function AdminPanel() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
+  const [sample, setSample] = useState(false);
+  const preview = usePreviewMode();
+
+  const showSample = () => {
+    setSample(true);
+    setOverview(sampleOverview());
+    setCustomModel(null);
+    setRows(SAMPLE_ROWS);
+    setState("ready");
+  };
 
   const loadOverview = useCallback(async () => {
     try {
@@ -141,7 +156,7 @@ export function AdminPanel() {
   }, []);
 
   useEffect(() => {
-    if (state !== "ready") return;
+    if (state !== "ready" || sample) return;
     let active = true;
     adminGet<{ businesses: BusinessRow[] }>(`view=businesses&q=${encodeURIComponent(query)}&offset=${offset}`)
       .then((res) => active && setRows(res.businesses))
@@ -149,14 +164,27 @@ export function AdminPanel() {
     return () => {
       active = false;
     };
-  }, [state, query, offset]);
+  }, [state, query, offset, sample]);
 
-  if (!isCloudConfigured()) return <p className="rounded-xl border bg-card p-4 text-sm">Accounts (Supabase) aren&apos;t set up yet.</p>;
+  const sampleOffer = preview?.enabled && (
+    <Button variant="outline" onClick={showSample}>
+      See it with sample data (test link)
+    </Button>
+  );
+
+  if (!isCloudConfigured() && !sample)
+    return (
+      <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-sm">
+        <p>Accounts (Supabase) aren&apos;t set up yet, so there are no users to show.</p>
+        {sampleOffer}
+      </div>
+    );
   if (state === "loading") return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
   if (state === "denied")
     return (
       <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
         This page is for InCeipt admins only. Sign in with an admin email (listed in the ADMIN_EMAILS setting).
+        {sampleOffer && <span className="mt-3 flex">{sampleOffer}</span>}
       </p>
     );
   if (state === "error" || !overview)
@@ -170,16 +198,29 @@ export function AdminPanel() {
     );
 
   const o = overview;
-  const mrrKobo = Math.round(o.pro_monthly * PLANS.monthly.kobo + (o.pro_yearly * PLANS.yearly.kobo) / 12);
+  // Whole naira: yearly plans are spread over 12 months.
+  const mrrKobo = Math.round((o.pro_monthly * PLANS.monthly.kobo + (o.pro_yearly * PLANS.yearly.kobo) / 12) / 100) * 100;
   // Rough cost at Claude Opus 5.5 list prices ($4 / $20 per million tokens), before prompt-cache discounts.
   const usd = (o.assistant_input_tokens_30d * 4 + o.assistant_output_tokens_30d * 20) / 1_000_000;
   const maxSignups = Math.max(1, ...o.signups_by_day.map((d) => Number(d.count)));
-  const total = rows[0]?.total_count ?? 0;
+  const shownRows =
+    sample && query
+      ? rows.filter((b) => `${b.name} ${b.owner_email}`.toLowerCase().includes(query.toLowerCase()))
+      : rows;
+  const total = sample ? shownRows.length : (rows[0]?.total_count ?? 0);
 
   return (
     <div className="flex flex-col gap-5">
+      {sample && (
+        <p className="rounded-xl border border-dashed border-primary/50 bg-secondary p-3 text-sm">
+          <strong>Sample data.</strong> This is what the dashboard looks like with real users. Your real numbers appear
+          once Supabase is set up and you sign in with an email in ADMIN_EMAILS.
+        </p>
+      )}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Accounts only. Phone-only users keep their records on their phone, so they aren&apos;t counted.</p>
+        <p className="text-sm text-muted-foreground">
+          Accounts only. Phone-only users keep their records on their phone, so they aren&apos;t counted.
+        </p>
         <Button variant="ghost" size="icon" aria-label="Refresh" onClick={loadOverview}>
           <RefreshCw />
         </Button>
@@ -188,18 +229,39 @@ export function AdminPanel() {
       <section className="flex flex-col gap-2">
         <h2 className="font-semibold">Revenue</h2>
         <div className="grid grid-cols-2 gap-2">
-          <Stat label="Monthly recurring revenue" value={formatNaira(mrrKobo)} sub={`${formatNaira(mrrKobo * 12)} a year`} />
-          <Stat label="Pro businesses" value={n(o.pro)} sub={`${n(o.pro_monthly)} monthly · ${n(o.pro_yearly)} yearly · ${n(o.pro_comp)} free`} />
+          <Stat
+            label="Monthly recurring revenue"
+            value={formatNaira(mrrKobo)}
+            sub={`${formatNaira(mrrKobo * 12)} a year`}
+          />
+          <Stat
+            label="Pro businesses"
+            value={n(o.pro)}
+            sub={`${n(o.pro_monthly)} monthly · ${n(o.pro_yearly)} yearly · ${n(o.pro_comp)} free`}
+          />
           <Stat label="Cancelling" value={n(o.cancelling)} sub="Pro until period ends" />
-          <Stat label="Payment failed" value={n(o.payment_issues)} tone={o.payment_issues ? "warn" : undefined} sub="Renewal needs attention" />
+          <Stat
+            label="Payment failed"
+            value={n(o.payment_issues)}
+            tone={o.payment_issues ? "warn" : undefined}
+            sub="Renewal needs attention"
+          />
         </div>
       </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="font-semibold">Growth</h2>
         <div className="grid grid-cols-2 gap-2">
-          <Stat label="Accounts" value={n(o.users)} sub={`+${n(o.users_7d)} this week · +${n(o.users_30d)} in 30 days`} />
-          <Stat label="Businesses" value={n(o.businesses)} sub={`+${n(o.businesses_7d)} this week · +${n(o.businesses_30d)} in 30 days`} />
+          <Stat
+            label="Accounts"
+            value={n(o.users)}
+            sub={`+${n(o.users_7d)} this week · +${n(o.users_30d)} in 30 days`}
+          />
+          <Stat
+            label="Businesses"
+            value={n(o.businesses)}
+            sub={`+${n(o.businesses_7d)} this week · +${n(o.businesses_30d)} in 30 days`}
+          />
           <Stat label="Active this week" value={n(o.active_7d)} sub={`${n(o.active_30d)} in 30 days`} />
           <Stat label="Conversion to Pro" value={o.businesses ? `${Math.round((o.pro / o.businesses) * 100)}%` : "—"} />
         </div>
@@ -225,12 +287,28 @@ export function AdminPanel() {
       <section className="flex flex-col gap-2">
         <h2 className="font-semibold">Usage, last 30 days</h2>
         <div className="grid grid-cols-2 gap-2">
-          <Stat label="Documents made" value={n(o.documents_30d)} sub={`${n(o.receipts_30d)} receipts · ${n(o.invoices_30d)} invoices · ${n(o.quotes_30d)} quotes`} />
-          <Stat label="Paid online" value={formatNaira(Number(o.online_payments_kobo_30d))} sub={`${n(o.online_payments_30d)} payments · ${n(o.payouts_connected)} businesses connected`} />
-          <Stat label="Assistant messages" value={n(o.assistant_messages_30d)} sub={`${n(o.assistant_messages_today)} today`} />
+          <Stat
+            label="Documents made"
+            value={n(o.documents_30d)}
+            sub={`${n(o.receipts_30d)} receipts · ${n(o.invoices_30d)} invoices · ${n(o.quotes_30d)} quotes`}
+          />
+          <Stat
+            label="Paid online"
+            value={formatNaira(Number(o.online_payments_kobo_30d))}
+            sub={`${n(o.online_payments_30d)} payments · ${n(o.payouts_connected)} businesses connected`}
+          />
+          <Stat
+            label="Assistant messages"
+            value={n(o.assistant_messages_30d)}
+            sub={`${n(o.assistant_messages_today)} today`}
+          />
           <Stat
             label="Assistant AI cost"
-            value={customModel ? `${n(o.assistant_input_tokens_30d + o.assistant_output_tokens_30d)} tokens` : `≈ $${usd.toFixed(2)}`}
+            value={
+              customModel
+                ? `${n(o.assistant_input_tokens_30d + o.assistant_output_tokens_30d)} tokens`
+                : `≈ $${usd.toFixed(2)}`
+            }
             sub={customModel ? `Model: ${customModel}` : "At list prices, before caching"}
           />
           <Stat label="Expenses logged" value={n(o.expenses_30d)} />
@@ -270,13 +348,18 @@ export function AdminPanel() {
             setQuery(search.trim());
           }}
         >
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Business name or owner email" aria-label="Search businesses" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Business name or owner email"
+            aria-label="Search businesses"
+          />
           <Button type="submit" variant="outline" size="icon" aria-label="Search">
             <Search />
           </Button>
         </form>
         <ul className="flex flex-col gap-2">
-          {rows.map((b) => (
+          {shownRows.map((b) => (
             <li key={b.id} className="rounded-xl border bg-card p-3 text-sm shadow-xs">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -286,7 +369,11 @@ export function AdminPanel() {
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                    b.is_pro ? "bg-primary/10 text-primary" : b.billing_status === "attention" ? "bg-amber-500/15 text-amber-800" : "bg-muted",
+                    b.is_pro
+                      ? "bg-primary/10 text-primary"
+                      : b.billing_status === "attention"
+                        ? "bg-amber-500/15 text-amber-800"
+                        : "bg-muted",
                   )}
                 >
                   {planLabel(b)}
@@ -306,7 +393,9 @@ export function AdminPanel() {
               </div>
             </li>
           ))}
-          {rows.length === 0 && <li className="py-4 text-center text-sm text-muted-foreground">No businesses found.</li>}
+          {shownRows.length === 0 && (
+            <li className="py-4 text-center text-sm text-muted-foreground">No businesses found.</li>
+          )}
         </ul>
         {total > 50 && (
           <div className="flex justify-between">
@@ -325,3 +414,104 @@ export function AdminPanel() {
     </div>
   );
 }
+
+/* ---------- Sample data (Pro preview on test links only) ---------- */
+
+function sampleOverview(): Overview {
+  const today = new Date();
+  const signups = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(today.getTime() - (29 - i) * 86_400_000);
+    return {
+      day: d.toISOString().slice(0, 10),
+      count: [2, 3, 1, 4, 6, 3, 2, 5, 7, 4, 3, 6, 8, 5, 4, 7, 9, 6, 5, 8, 10, 7, 6, 9, 11, 8, 7, 10, 12, 9][i],
+    };
+  });
+  return {
+    users: 1284,
+    users_7d: 61,
+    users_30d: 196,
+    businesses: 1197,
+    businesses_7d: 57,
+    businesses_30d: 181,
+    active_7d: 642,
+    active_30d: 911,
+    pro: 143,
+    pro_monthly: 96,
+    pro_yearly: 38,
+    pro_comp: 9,
+    cancelling: 7,
+    payment_issues: 3,
+    documents: 48_210,
+    documents_30d: 9_874,
+    receipts_30d: 6_912,
+    invoices_30d: 2_315,
+    quotes_30d: 647,
+    online_payments_30d: 412,
+    online_payments_kobo_30d: 1_874_350_000,
+    payouts_connected: 58,
+    staff: 74,
+    expenses_30d: 2_106,
+    assistant_messages_today: 188,
+    assistant_messages_30d: 4_960,
+    assistant_input_tokens_30d: 29_800_000,
+    assistant_output_tokens_30d: 1_640_000,
+    webhooks_7d: 236,
+    webhook_errors: [
+      {
+        id: "s1",
+        event: "charge.success",
+        error: "Subscription not found for customer CUS_x9 (retried, fixed)",
+        received_at: new Date(today.getTime() - 2 * 86_400_000).toISOString(),
+      },
+    ],
+    signups_by_day: signups,
+  };
+}
+
+const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+const row = (
+  id: string,
+  name: string,
+  email: string,
+  joined: number,
+  plan: BusinessRow["plan"],
+  status: string,
+  docs: number,
+  docs30: number,
+  staff: number,
+  payouts: boolean,
+  ai: number,
+  active: number,
+  extra: Partial<BusinessRow> = {},
+): BusinessRow => ({
+  id,
+  name,
+  owner_email: email,
+  created_at: ago(joined),
+  plan,
+  billing_status: status,
+  comp: false,
+  is_pro: status === "active" || status === "non_renewing",
+  period_end: plan ? ago(-(plan === "yearly" ? 200 : 18)) : null,
+  documents: docs,
+  documents_30d: docs30,
+  staff,
+  payouts_connected: payouts,
+  assistant_messages_30d: ai,
+  last_active: ago(active),
+  total_count: 8,
+  ...extra,
+});
+const SAMPLE_ROWS: BusinessRow[] = [
+  row("b1", "Mama Chi Kitchen", "chi.okeke@gmail.com", 3, "monthly", "active", 41, 41, 1, true, 63, 0),
+  row("b2", "Ade Phones & Accessories", "ade.phones@yahoo.com", 11, null, "none", 27, 22, 0, false, 0, 1),
+  row("b3", "Zainab Events Ltd", "hello@zainabevents.ng", 45, "yearly", "active", 312, 88, 4, true, 210, 0),
+  row("b4", "Kunle Auto Spare Parts", "kunle.spares@gmail.com", 60, "monthly", "attention", 198, 30, 2, false, 12, 3),
+  row("b5", "Bella's Hair Studio", "bellahair@gmail.com", 72, null, "none", 94, 19, 0, false, 0, 6),
+  row("b6", "Emeka Fabrics", "emeka.fabrics@outlook.com", 90, "monthly", "non_renewing", 260, 45, 1, true, 34, 2),
+  row("b7", "Grace Pharmacy", "gracepharm@gmail.com", 120, null, "none", 15, 0, 0, false, 0, 40),
+  row("b8", "Tunde Logistics", "ops@tundelogistics.ng", 150, null, "none", 402, 120, 3, true, 95, 0, {
+    comp: true,
+    is_pro: true,
+  }),
+];

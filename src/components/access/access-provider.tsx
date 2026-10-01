@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { loadAccess, type Access } from "@/lib/access";
 import { OWNER_ONLY_MESSAGE } from "@/lib/permissions";
+import { usePreviewMode } from "@/lib/preview";
 
 interface AccessContextValue {
   /** null while loading */
@@ -59,6 +60,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
   );
 
   const pathname = usePathname();
+  const preview = usePreviewMode();
   const showBlocked = access?.blocked && !["/account", "/signin"].includes(pathname);
 
   return (
@@ -89,8 +91,8 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
             </span>
             <DialogTitle>{upgradeFeature} is a Pro feature</DialogTitle>
             <DialogDescription>
-              Upgrade to InCeipt Pro to unlock it, along with debt tracking, quotations, expenses and profit, staff
-              accounts and Pay Now links. From ₦3,000 a month.
+              Upgrade to InCeipt Pro to unlock it, along with the AI assistant, tax estimates, debt tracking, quotations,
+              expenses and profit, staff accounts and Pay Now links. From ₦3,000 a month.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -99,6 +101,11 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
                 <Sparkles /> Upgrade to Pro
               </Link>
             </Button>
+            {preview?.enabled && access?.mode === "local" && (
+              <Button asChild variant="outline" onClick={() => setUpgradeFeature(null)}>
+                <Link href="/demo">Try the Pro preview (test link)</Link>
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => setUpgradeFeature(null)}>
               Not now
             </Button>
