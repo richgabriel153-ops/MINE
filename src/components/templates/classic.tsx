@@ -11,6 +11,7 @@ import {
   METHOD_LABEL,
   STATUS_COLOUR,
   STATUS_LABEL,
+  TEMPLATE_FONT,
   TEMPLATE_WIDTH,
   type TemplateProps,
 } from "./shared";
@@ -26,7 +27,7 @@ export function ClassicTemplate({ doc, profile, showFooterBrand }: TemplateProps
 
   return (
     <div
-      style={{ width: TEMPLATE_WIDTH, fontFamily: "var(--font-inter), var(--font-naira), sans-serif" }}
+      style={{ width: TEMPLATE_WIDTH, fontFamily: TEMPLATE_FONT }}
       className="bg-white text-[13px] leading-snug text-[#111827]"
     >
       {/* Header */}

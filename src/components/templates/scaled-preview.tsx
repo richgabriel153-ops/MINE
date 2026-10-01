@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { TEMPLATE_WIDTH } from "./shared";
 
 /** Shows a fixed-width template shrunk to fit the screen, exactly as it will look when shared. */
-export function ScaledPreview({ children }: { children: React.ReactNode }) {
+export function ScaledPreview({ width = TEMPLATE_WIDTH, children }: { width?: number; children: React.ReactNode }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -16,7 +16,7 @@ export function ScaledPreview({ children }: { children: React.ReactNode }) {
     const inner = innerRef.current;
     if (!outer || !inner) return;
     const update = () => {
-      const s = Math.min(1, outer.clientWidth / TEMPLATE_WIDTH);
+      const s = Math.min(1, outer.clientWidth / width);
       setScale(s);
       setHeight(inner.offsetHeight * s);
     };
@@ -25,14 +25,14 @@ export function ScaledPreview({ children }: { children: React.ReactNode }) {
     ro.observe(outer);
     ro.observe(inner);
     return () => ro.disconnect();
-  }, []);
+  }, [width]);
 
   return (
     <div ref={outerRef} className="w-full overflow-hidden" style={{ height }}>
       <div
         ref={innerRef}
         className="mx-auto overflow-hidden rounded-md shadow-lg ring-1 ring-black/5"
-        style={{ width: TEMPLATE_WIDTH, transform: `scale(${scale})`, transformOrigin: "top left" }}
+        style={{ width, transform: `scale(${scale})`, transformOrigin: "top left" }}
       >
         {children}
       </div>
