@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { ProLock, useAccess } from "@/components/access/access-provider";
+import { AdminLink } from "@/components/admin/admin-link";
 import type { Permissions } from "@/lib/permissions";
 
 interface Item {
@@ -84,6 +85,9 @@ export function MoreMenu() {
           </li>
         );
       })}
+      <li>
+        <AdminLink signedIn={access.mode === "cloud"} />
+      </li>
     </ul>
   );
 }
