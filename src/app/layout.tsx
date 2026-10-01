@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 
+import { ServiceWorker } from "@/components/pwa/service-worker";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -29,6 +30,8 @@ export const metadata: Metadata = {
   description:
     "Make neat receipts and invoices on your phone in seconds and send them to customers on WhatsApp. Free for Nigerian small businesses.",
   applicationName: "ReceiptNaija",
+  appleWebApp: { capable: true, title: "ReceiptNaija", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -43,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-dvh">
         {children}
         <Toaster />
+        <ServiceWorker />
       </body>
     </html>
   );

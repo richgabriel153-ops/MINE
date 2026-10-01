@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, FileText, ReceiptText, ShieldCheck } from "lucide-react";
+import { BadgeCheck, ChevronRight, FileText, ReceiptText, ShieldCheck } from "lucide-react";
 
 import { DocumentCard } from "@/components/history/document-card";
+import { InstallButton } from "@/components/pwa/install-button";
 import { Button } from "@/components/ui/button";
 import { useDocuments } from "@/hooks/use-documents";
+import { usePro } from "@/hooks/use-pro";
 import { useProfile } from "@/hooks/use-profile";
 import { lagosDate } from "@/lib/dates";
 import { getSettings } from "@/lib/db";
@@ -20,6 +22,7 @@ const BACKUP_REMINDER_DAYS = 14;
 export function HomeDashboard() {
   const [profile] = useProfile();
   const { docs } = useDocuments();
+  const [pro] = usePro();
   const recent = docs?.slice(0, 5) ?? [];
   const summary = useMemo(() => (docs ? summarise(docs, lagosDate()) : null), [docs]);
   const [backupStale, setBackupStale] = useState(false);
@@ -140,6 +143,18 @@ export function HomeDashboard() {
           </ul>
         )}
       </section>
+
+      <InstallButton className="w-full" />
+
+      {pro && !pro.unlocked && (
+        <Link href="/pro" className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm shadow-xs">
+          <BadgeCheck className="size-6 shrink-0 text-primary" />
+          <span className="flex-1">
+            <strong>Go Pro:</strong> remove the ReceiptNaija footer, get 2 extra templates and unlimited history.
+          </span>
+          <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
+        </Link>
+      )}
     </div>
   );
 }
