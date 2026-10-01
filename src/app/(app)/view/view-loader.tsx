@@ -13,10 +13,13 @@ import { getTemplate } from "@/components/templates";
 import { ScaledPreview } from "@/components/templates/scaled-preview";
 import { TemplatePicker } from "@/components/templates/template-picker";
 import { Button } from "@/components/ui/button";
-import { getDocument, getProfile, setDocumentTemplate, updateSettings } from "@/lib/db";
+import { getDocument, getProfile, getProStatus, setDocumentTemplate, updateSettings } from "@/lib/db";
 import type { BusinessProfile, DocumentRecord, TemplateId } from "@/lib/types";
 
-type Loaded = { state: "loading" } | { state: "missing" } | { state: "ready"; doc: DocumentRecord; profile: BusinessProfile };
+type Loaded =
+  | { state: "loading" }
+  | { state: "missing" }
+  | { state: "ready"; doc: DocumentRecord; profile: BusinessProfile; isPro: boolean };
 
 export function ViewLoader() {
   const id = useSearchParams().get("id");
@@ -25,8 +28,8 @@ export function ViewLoader() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const [doc, profile] = await Promise.all([id ? getDocument(id) : undefined, getProfile()]);
-      if (active) setLoaded(doc ? { state: "ready", doc, profile } : { state: "missing" });
+      const [doc, profile, pro] = await Promise.all([id ? getDocument(id) : undefined, getProfile(), getProStatus()]);
+      if (active) setLoaded(doc ? { state: "ready", doc, profile, isPro: pro.unlocked } : { state: "missing" });
     })();
     return () => {
       active = false;
@@ -48,19 +51,18 @@ export function ViewLoader() {
       </>
     );
 
-  return <DocumentView key={loaded.doc.id} initialDoc={loaded.doc} profile={loaded.profile} />;
+  return <DocumentView key={loaded.doc.id} initialDoc={loaded.doc} profile={loaded.profile} isPro={loaded.isPro} />;
 }
 
-function DocumentView({ initialDoc, profile }: { initialDoc: DocumentRecord; profile: BusinessProfile }) {
+function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentRecord; profile: BusinessProfile; isPro: boolean }) {
   const router = useRouter();
   const [doc, setDoc] = useState(initialDoc);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
-  const template = getTemplate(doc.templateId);
+  const template = getTemplate(doc.templateId, isPro);
   const Template = template.Component;
-  // Free version shows the footer; Pro (stage 4) will turn it off.
-  const showFooterBrand = true;
+  const showFooterBrand = !isPro;
 
   async function changeTemplate(templateId: TemplateId) {
     setDoc((d) => ({ ...d, templateId }));
@@ -92,7 +94,13 @@ function DocumentView({ initialDoc, profile }: { initialDoc: DocumentRecord; pro
             </Link>
           </p>
         )}
-        <TemplatePicker value={doc.templateId} onChange={changeTemplate} brandColor={profile.brandColor} />
+        <TemplatePicker
+          value={template.id}
+          onChange={changeTemplate}
+          onLocked={() => router.push("/pro")}
+          brandColor={profile.brandColor}
+          isPro={isPro}
+        />
         <ScaledPreview width={template.width}>
           <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} />
         </ScaledPreview>

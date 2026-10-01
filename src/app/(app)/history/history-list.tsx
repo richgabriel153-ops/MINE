@@ -11,8 +11,10 @@ import { DocumentCard } from "@/components/history/document-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDocuments } from "@/hooks/use-documents";
+import { usePro } from "@/hooks/use-pro";
 import { filterDocuments, monthLabel, type StatusFilter, type TypeFilter } from "@/lib/history-filter";
 import { formatNaira } from "@/lib/money";
+import { FREE_HISTORY_LIMIT } from "@/lib/pro";
 import { owingKobo } from "@/lib/summary";
 import { cn } from "@/lib/utils";
 import type { DocumentRecord } from "@/lib/types";
@@ -53,7 +55,14 @@ function groupByMonth(docs: DocumentRecord[]) {
 }
 
 export function HistoryList() {
-  const { docs, reload } = useDocuments();
+  const { docs: allDocs, reload } = useDocuments();
+  const [pro] = usePro();
+  // Free version shows the newest FREE_HISTORY_LIMIT documents; the rest stay saved and in backups.
+  const limited = pro !== null && !pro.unlocked && allDocs !== null && allDocs.length > FREE_HISTORY_LIMIT;
+  const docs = useMemo(
+    () => (allDocs && pro !== null ? (limited ? allDocs.slice(0, FREE_HISTORY_LIMIT) : allDocs) : null),
+    [allDocs, pro, limited],
+  );
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -142,6 +151,13 @@ export function HistoryList() {
           <> · {formatNaira(owingTotal)} owed</>
         )}
       </p>
+
+      {limited && (
+        <Link href="/pro" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          Showing your latest {FREE_HISTORY_LIMIT} of {allDocs?.length} records. Older ones are safe on this phone and in
+          your backups. <span className="font-semibold underline">Go Pro to see them all.</span>
+        </Link>
+      )}
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-8 text-center">

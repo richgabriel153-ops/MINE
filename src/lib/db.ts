@@ -254,3 +254,23 @@ export async function importBackup(backup: BackupFile, mode: ImportMode): Promis
   await tx.done;
   return plan;
 }
+
+/* ---------- Pro ---------- */
+
+export interface ProStatus {
+  unlocked: boolean;
+  unlockedAt: string;
+}
+
+export async function getProStatus(): Promise<ProStatus> {
+  const db = await getDb();
+  const saved = (await db.get("meta", "pro")) as ProStatus | undefined;
+  return saved ?? { unlocked: false, unlockedAt: "" };
+}
+
+export async function setProUnlocked(): Promise<ProStatus> {
+  const db = await getDb();
+  const status = { unlocked: true, unlockedAt: new Date().toISOString() };
+  await db.put("meta", status, "pro");
+  return status;
+}
