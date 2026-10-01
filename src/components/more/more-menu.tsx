@@ -35,7 +35,7 @@ interface Item {
 }
 
 const ITEMS: Item[] = [
-  { href: "/assistant", label: "Assistant (AI)", text: "Type what you want, it's done for you", icon: Sparkles, pro: (c) => c.assistant },
+  { href: "/assistant", label: "Assistant (AI)", text: "Type what you want, it's done for you", icon: Sparkles, pro: (c) => c.assistant, cloudOnly: true },
   { href: "/account", label: "Account", text: "Sign in, switch business", icon: UserRound },
   { href: "/profile", label: "Business details", text: "Logo, contacts, bank, colour", icon: Store, show: (_c, _m, r) => r === "owner" },
   { href: "/quotes", label: "Quotations", text: "Quotes and proforma invoices", icon: FileText, pro: (c) => c.quotes },

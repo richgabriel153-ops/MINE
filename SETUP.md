@@ -19,6 +19,7 @@ subscriptions, Pay Now links and staff switch on once the keys are added and the
    4. `20261001000400_staff.sql`
    5. `20261001000500_expenses.sql` (also creates the private `expense-photos` storage bucket)
    6. `20261001000600_quotes.sql`
+   7. `20261001000700_admin_assistant.sql` (assistant usage limits and the admin dashboard)
 
    (Or with the Supabase CLI: `supabase link --project-ref <ref>` then `supabase db push`.)
 3. **Email sign-in with a 6-digit code.** Go to **Authentication → Sign In / Providers → Email**: keep Email on,
@@ -75,10 +76,28 @@ Add each one under **Settings → Environment Variables**, tick **Production** a
 | `NEXT_PUBLIC_APP_URL` | Optional. Your live address, e.g. `https://inceipt.app` (used for Paystack return links) | No |
 | `PAYSTACK_PLATFORM_FEE_PERCENT` | Optional. Your cut of Pay Now payments, e.g. `1` for 1%. Default 0 | No |
 | `PRO_UNLOCK_CODES` | Keep your existing early-supporter codes so they stay honoured | **Yes** |
+| `ADMIN_EMAILS` | Your email(s) for the admin dashboard, comma separated, e.g. `you@gmail.com` | Keep private |
+| `ANTHROPIC_API_KEY` | <https://console.anthropic.com> → Settings → API Keys → Create key (add billing credit first) | **Yes** |
+| `AGENT_DAILY_LIMIT` | Optional. Assistant messages per business per day. Default 40 | No |
+| `AGENT_MODEL` | Optional. Claude model for the assistant. Default `claude-opus-5-5` | No |
+| `AGENT_EFFORT` | Optional. `low` (default, cheapest), `medium` or `high` | No |
+| `AGENT_FALLBACKS` | Optional. Default on. Set `off` only if you switch to a model that doesn't support refusal fallbacks | No |
 
 You can remove `NEXT_PUBLIC_PRO_PAYMENT_LINK` and `NEXT_PUBLIC_PRO_PRICE_LABEL`; they're no longer used.
 
-## 4. Check it works (test mode first)
+## 4. Admin dashboard and AI assistant
+
+- **Admin dashboard**: sign in to InCeipt with an email listed in `ADMIN_EMAILS`. More → **Admin dashboard**
+  (or go to `/admin`). It shows revenue (MRR), Pro plans, sign-ups, active businesses, usage, Paystack webhook
+  errors and a searchable business list. It never shows customers or document contents. Phone-only users
+  (no account) keep everything on their phone, so they can't be counted.
+- **InCeipt Assistant** (Pro, needs an account): More → **Assistant (AI)**. It uses Claude through your
+  Anthropic API key. Anything that changes records is shown as a card and only saved when the user taps
+  **Confirm**. Each business gets `AGENT_DAILY_LIMIT` typed messages a day. Watch the cost on the admin
+  dashboard and in the Anthropic console (Usage). Set a monthly spend limit in the Anthropic console.
+  If Claude declines a request, it is retried on Anthropic's recommended fallback model.
+
+## 5. Check it works (test mode first)
 
 1. Use Paystack **test** keys and test plans, redeploy the preview.
 2. More → Account → sign in with your email → code → **Create my business account** (your phone's records are copied).
