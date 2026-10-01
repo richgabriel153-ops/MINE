@@ -1,7 +1,8 @@
 # InCeipt
 
 Free, mobile-first receipt and invoice generator for small Nigerian businesses.
-Everything is saved on the device (IndexedDB). No login and no database in v1.
+Free users need no login: records are saved on the device (IndexedDB). Pro businesses sign in with an
+email code and their records live in Supabase, shared with their staff.
 
 ## Develop
 
@@ -14,21 +15,15 @@ npm run lint && npm run typecheck
 
 Copy `.env.example` to `.env.local` and fill in the values.
 
-## Environment variables (set these in Vercel → Project → Settings → Environment Variables)
+## Setup (accounts, subscriptions, Pay Now)
 
-| Name | What it is |
-| --- | --- |
-| `NEXT_PUBLIC_PRO_PAYMENT_LINK` | Your Paystack payment page link, opened by "Upgrade to Pro". Must start with `https://`. |
-| `NEXT_PUBLIC_PRO_PRICE_LABEL` | Optional. Price text shown on the Go Pro page, e.g. `₦5,000 one-time`. Leave empty to hide it. |
-| `PRO_UNLOCK_CODES` | Comma-separated unlock codes, e.g. `NAIJA-PRO-7K2Q,NAIJA-PRO-9XWP`. Checked only on the server (`/api/unlock`), never sent to phones. |
+See **[SETUP.md](SETUP.md)** for the Supabase migrations, Paystack plans and webhook, and every
+environment variable (and which are secret).
 
-Redeploy after changing them (`NEXT_PUBLIC_…` values are built into the app).
+## Pro
 
-### ⚠️ Temporary Pro unlock
-
-Unlock codes are a stop-gap: a code can be shared and reused, and Pro status is stored on the
-phone only. Replace with a proper backend (one code per buyer created by a Paystack webhook,
-tied to the buyer's phone/email) before Pro sales grow. See `src/lib/unlock-codes.ts`.
+Pro is a subscription (₦3,000/month or ₦28,000/year) on the business account, paid through Paystack.
+Unlock codes from before subscriptions are still honoured (`PRO_UNLOCK_CODES`).
 
 ## How it's built
 
@@ -39,3 +34,6 @@ tied to the buyer's phone/email) before Pro sales grow. See `src/lib/unlock-code
   shared images are kept under 300 KB (`src/lib/export-image.ts`). PDFs use jsPDF, loaded on demand.
 - Offline: `public/sw.js` saves all pages and their files; the app is installable (`src/app/manifest.ts`)
 - Backup files are JSON (`src/lib/backup.ts`)
+- `src/lib/db.ts` sends each read/write to the phone (`local-db.ts`) or the account (`cloud/repo.ts`)
+- Database: `supabase/migrations` (Row Level Security; all writes via checked functions), tested on PGlite in `tests/db`
+- Server routes: `/api/billing`, `/api/paystack/webhook`, `/api/payouts`, `/api/pay`, `/api/unlock`
