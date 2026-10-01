@@ -3,6 +3,7 @@ import type { DocType } from "./types";
 export const DOC_PREFIX: Record<DocType, string> = {
   receipt: "RCT",
   invoice: "INV",
+  quote: "QUO",
 };
 
 /** formatDocNumber("receipt", 7) → "RCT-0007" */
@@ -12,9 +13,10 @@ export function formatDocNumber(type: DocType, n: number): string {
 
 /** "RCT-0007" → 7, or null if it doesn't look like one of ours. */
 export function parseDocNumber(value: string): { type: DocType; n: number } | null {
-  const match = /^(RCT|INV)-(\d+)$/.exec(value);
+  const match = /^(RCT|INV|QUO)-(\d+)$/.exec(value);
   if (!match) return null;
-  return { type: match[1] === "RCT" ? "receipt" : "invoice", n: Number(match[2]) };
+  const type: DocType = match[1] === "RCT" ? "receipt" : match[1] === "INV" ? "invoice" : "quote";
+  return { type, n: Number(match[2]) };
 }
 
 export type Counters = Record<DocType, number>;

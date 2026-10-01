@@ -185,3 +185,80 @@ export async function createPayLink(documentId: string): Promise<string> {
 export async function myAccess(businessId: string): Promise<MyAccess> {
   return call<MyAccess>("my_access", { bid: businessId });
 }
+
+/* ---------- Staff and activity ---------- */
+
+export interface Member {
+  id: string;
+  email: string;
+  name: string;
+  role: "owner" | "staff";
+  status: "invited" | "active" | "deactivated";
+  created_at: string;
+}
+
+export async function listMembers(businessId: string): Promise<Member[]> {
+  const { data, error } = await supabase()
+    .from("members")
+    .select("id, email, name, role, status, created_at")
+    .eq("business_id", businessId)
+    .order("created_at");
+  if (error) throw friendlyError(error);
+  return data as Member[];
+}
+
+export async function inviteStaff(businessId: string, email: string, name: string): Promise<void> {
+  try {
+    await call("invite_staff", { bid: businessId, p_email: email, p_name: name });
+  } catch (err) {
+    const m = err instanceof Error ? err.message : "";
+    if (/bad_email/.test(m)) throw new Error("That email address doesn't look right.");
+    if (/is_owner/.test(m)) throw new Error("That's the owner's email.");
+    throw err;
+  }
+}
+
+export async function setStaffActive(memberId: string, active: boolean): Promise<void> {
+  await call("set_staff_active", { p_member_id: memberId, p_active: active });
+}
+
+export async function setMyName(businessId: string, name: string): Promise<void> {
+  await call("set_my_name", { bid: businessId, p_name: name });
+}
+
+export interface ActivityEntry {
+  id: number;
+  actor_name: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  summary: string;
+  created_at: string;
+}
+
+export async function listActivity(businessId: string, beforeId?: number, limit = 50): Promise<ActivityEntry[]> {
+  let q = supabase()
+    .from("activity_log")
+    .select("id, actor_name, action, entity_type, entity_id, summary, created_at")
+    .eq("business_id", businessId)
+    .order("id", { ascending: false })
+    .limit(limit);
+  if (beforeId) q = q.lt("id", beforeId);
+  const { data, error } = await q;
+  if (error) throw friendlyError(error);
+  return data as ActivityEntry[];
+}
+
+export interface PaymentEntry {
+  amount_kobo: number;
+  method: string;
+  paid_on: string;
+  source: string;
+  created_by_name: string;
+  created_at: string;
+}
+
+export async function documentPayments(documentId: string): Promise<PaymentEntry[]> {
+  const rows = await call<PaymentEntry[]>("document_payments", { p_doc_id: documentId });
+  return rows.map((r) => ({ ...r, amount_kobo: Number(r.amount_kobo) }));
+}

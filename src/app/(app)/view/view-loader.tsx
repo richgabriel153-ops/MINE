@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { DeleteDialog } from "@/components/document/delete-dialog";
+import { PaymentHistory, RecordPayment } from "@/components/document/record-payment";
 import { canMarkPaid, MarkPaidDialog } from "@/components/document/mark-paid-dialog";
 import { PageHeader } from "@/components/layout/page-header";
 import { PayLinkPanel } from "@/components/share/pay-link-panel";
@@ -129,6 +130,11 @@ function DocumentView({ initialDoc, profile, isPro }: { initialDoc: DocumentReco
         <ScaledPreview width={template.width}>
           <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} payNow={payNow} />
         </ScaledPreview>
+        {doc.type !== "quote" && <RecordPayment doc={doc} onRecorded={(updated) => setDoc((d) => ({ ...d, ...updated }))} />}
+        <PaymentHistory doc={doc} />
+        {doc.createdByName && access?.mode === "cloud" && (
+          <p className="text-center text-xs text-muted-foreground">Created by {doc.createdByName}</p>
+        )}
         {doc.type === "invoice" && balance > 0 && (
           <PayLinkPanel doc={doc} url={showLink ? linkUrl : null} onLinked={(token) => setDoc((d) => ({ ...d, payToken: token }))} />
         )}

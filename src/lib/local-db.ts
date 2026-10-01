@@ -60,7 +60,7 @@ export async function saveProfile(profile: BusinessProfile): Promise<void> {
 
 /* ---------- Counters ---------- */
 
-const ZERO_COUNTERS: Counters = { receipt: 0, invoice: 0 };
+const ZERO_COUNTERS: Counters = { receipt: 0, invoice: 0, quote: 0 };
 
 export async function getCounters(): Promise<Counters> {
   const db = await getDb();
@@ -188,6 +188,30 @@ export async function markInvoicePaid(invoiceId: string, method: PaymentMethod, 
   await docs.put({ ...invoice, status: "paid", method, receiptId: receipt.id, updatedAt: now });
   await tx.done;
   return receipt;
+}
+
+/**
+ * Record money received on this phone (Pro). Adds to the amount paid; the status becomes
+ * Part paid or Paid. Returns the updated document.
+ */
+export async function recordPayment(id: string, amountKobo: number, method: PaymentMethod): Promise<DocumentRecord> {
+  const db = await getDb();
+  const doc = await db.get("documents", id);
+  if (!doc) throw new Error("This document no longer exists.");
+  const { computeTotals } = await import("./totals");
+  const totals = computeTotals(doc);
+  if (amountKobo <= 0 || amountKobo > totals.balanceKobo) throw new Error("That amount is more than what's left to pay.");
+  const paid = totals.amountPaidKobo + amountKobo;
+  const full = paid >= totals.totalKobo;
+  const updated: DocumentRecord = {
+    ...doc,
+    status: full ? "paid" : "part",
+    amountPaidKobo: full ? 0 : paid,
+    method,
+    updatedAt: new Date().toISOString(),
+  };
+  await db.put("documents", updated);
+  return updated;
 }
 
 /* ---------- Small settings (last notes, last template, …) ---------- */

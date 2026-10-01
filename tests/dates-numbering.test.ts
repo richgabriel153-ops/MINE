@@ -36,9 +36,6 @@ describe("numbering", () => {
     expect(parseDocNumber("XYZ-1")).toBeNull();
   });
   it("counters never go backwards after a restore", () => {
-    expect(countersFromNumbers(["RCT-0003", "INV-0010", "RCT-0001"], { receipt: 5, invoice: 2 })).toEqual({
-      receipt: 5,
-      invoice: 10,
-    });
+    expect(countersFromNumbers(["RCT-0003", "INV-0010", "RCT-0001"], { receipt: 5, invoice: 2, quote: 0 })).toEqual({ receipt: 5, invoice: 10, quote: 0 });
   });
 });

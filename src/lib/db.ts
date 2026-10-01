@@ -69,6 +69,12 @@ export async function markInvoicePaid(invoiceId: string, method: PaymentMethod, 
   return c ? cloud.markInvoicePaid(invoiceId, method, today) : local.markInvoicePaid(invoiceId, method, today);
 }
 
+/** Record money received against an invoice or receipt (Pro). */
+export async function recordPayment(id: string, amountKobo: number, method: PaymentMethod, paidOn: string): Promise<DocumentRecord> {
+  const c = await getCloudContext();
+  return c ? cloud.recordPayment(id, amountKobo, method, paidOn) : local.recordPayment(id, amountKobo, method);
+}
+
 export async function setDocumentTemplate(id: string, templateId: TemplateId): Promise<void> {
   const c = await getCloudContext();
   if (c) await cloud.setDocumentTemplate(id, templateId);

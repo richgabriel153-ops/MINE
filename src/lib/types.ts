@@ -1,4 +1,4 @@
-export type DocType = "receipt" | "invoice";
+export type DocType = "receipt" | "invoice" | "quote";
 export type PaymentStatus = "paid" | "part" | "unpaid";
 export type PaymentMethod = "transfer" | "cash" | "pos";
 export type TemplateId = "classic" | "modern" | "compact" | "bold" | "elegant";

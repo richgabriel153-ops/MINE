@@ -68,6 +68,7 @@ export function parseBackup(text: string): BackupFile {
     counters: {
       receipt: Number.isSafeInteger(counters.receipt) ? (counters.receipt as number) : 0,
       invoice: Number.isSafeInteger(counters.invoice) ? (counters.invoice as number) : 0,
+      quote: Number.isSafeInteger(counters.quote) ? (counters.quote as number) : 0,
     },
     settings: isObject(data.settings) ? data.settings : {},
     documents: data.documents as DocumentRecord[],
@@ -121,6 +122,7 @@ export function planImport(
   const highest = {
     receipt: Math.max(current.counters.receipt, backup.counters.receipt),
     invoice: Math.max(current.counters.invoice, backup.counters.invoice),
+    quote: Math.max(current.counters.quote ?? 0, backup.counters.quote ?? 0),
   };
   return {
     documents,
