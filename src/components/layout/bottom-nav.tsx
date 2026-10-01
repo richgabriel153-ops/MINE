@@ -15,10 +15,15 @@ const ITEMS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  // On phones the create form has its own sticky Save bar instead.
+  const hideOnPhone = pathname === "/create";
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur pb-safe md:sticky md:top-0 md:bottom-auto md:border-t-0 md:border-b"
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur pb-safe md:sticky md:top-0 md:bottom-auto md:border-t-0 md:border-b",
+        hideOnPhone && "max-md:hidden",
+      )}
     >
       <ul className="mx-auto grid max-w-2xl grid-cols-4">
         {ITEMS.map(({ href, label, icon: Icon }) => {

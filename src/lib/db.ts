@@ -1,7 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
+import { newId } from "./id";
 import { formatDocNumber, type Counters } from "./numbering";
-import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord } from "./types";
+import { EMPTY_PROFILE, type BusinessProfile, type DocType, type DocumentDraft, type DocumentRecord, type TemplateId } from "./types";
 
 /**
  * Everything lives in one IndexedDB database on the device:
@@ -69,10 +70,6 @@ export async function peekNextNumber(type: DocType): Promise<string> {
 
 /* ---------- Documents ---------- */
 
-function newId(): string {
-  return crypto.randomUUID();
-}
-
 /** All documents, newest first. */
 export async function listDocuments(): Promise<DocumentRecord[]> {
   const db = await getDb();
@@ -131,4 +128,25 @@ export async function updateDocument(id: string, draft: DocumentDraft): Promise<
 export async function deleteDocument(id: string): Promise<void> {
   const db = await getDb();
   await db.delete("documents", id);
+}
+
+/* ---------- Small settings (last notes, last template, …) ---------- */
+
+export interface Settings {
+  lastNotes: string;
+  lastTemplate: TemplateId;
+}
+
+const DEFAULT_SETTINGS: Settings = { lastNotes: "", lastTemplate: "classic" };
+
+export async function getSettings(): Promise<Settings> {
+  const db = await getDb();
+  const saved = (await db.get("meta", "settings")) as Partial<Settings> | undefined;
+  return { ...DEFAULT_SETTINGS, ...saved };
+}
+
+export async function updateSettings(patch: Partial<Settings>): Promise<void> {
+  const db = await getDb();
+  const current = await getSettings();
+  await db.put("meta", { ...current, ...patch }, "settings");
 }
