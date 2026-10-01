@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Copy, Pencil, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { ClassicTemplate } from "@/components/templates/classic";
+import { ShareBar } from "@/components/share/share-bar";
+import { getTemplate } from "@/components/templates";
 import { ScaledPreview } from "@/components/templates/scaled-preview";
+import { TemplatePicker } from "@/components/templates/template-picker";
 import { Button } from "@/components/ui/button";
-import { getDocument, getProfile } from "@/lib/db";
-import type { BusinessProfile, DocumentRecord } from "@/lib/types";
+import { getDocument, getProfile, setDocumentTemplate, updateSettings } from "@/lib/db";
+import type { BusinessProfile, DocumentRecord, TemplateId } from "@/lib/types";
 
 type Loaded = { state: "loading" } | { state: "missing" } | { state: "ready"; doc: DocumentRecord; profile: BusinessProfile };
 
@@ -44,33 +46,56 @@ export function ViewLoader() {
       </>
     );
 
-  const { doc, profile } = loaded;
+  return <DocumentView initialDoc={loaded.doc} profile={loaded.profile} />;
+}
+
+function DocumentView({ initialDoc, profile }: { initialDoc: DocumentRecord; profile: BusinessProfile }) {
+  const [doc, setDoc] = useState(initialDoc);
+  const exportRef = useRef<HTMLDivElement>(null);
+  const template = getTemplate(doc.templateId);
+  const Template = template.Component;
+  // Free version shows the footer; Pro (stage 4) will turn it off.
+  const showFooterBrand = true;
+
+  async function changeTemplate(templateId: TemplateId) {
+    setDoc((d) => ({ ...d, templateId }));
+    await Promise.all([setDocumentTemplate(doc.id, templateId), updateSettings({ lastTemplate: templateId })]);
+  }
+
   return (
     <>
       <PageHeader title={doc.number} backHref="/history" />
-      <ScaledPreview>
-        <ClassicTemplate doc={doc} profile={profile} showFooterBrand />
-      </ScaledPreview>
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <Button asChild variant="outline">
-          <Link href={`/create?edit=${doc.id}`}>
-            <Pencil /> Edit
-          </Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href={`/create?duplicate=${doc.id}`}>
-            <Copy /> Make a copy
-          </Link>
-        </Button>
-        <Button asChild className="col-span-2">
-          <Link href={doc.type === "invoice" ? "/create?type=invoice" : "/create"}>
-            <Plus /> New {doc.type}
-          </Link>
-        </Button>
+      <div className="flex flex-col gap-4">
+        <TemplatePicker value={doc.templateId} onChange={changeTemplate} brandColor={profile.brandColor} />
+        <ScaledPreview width={template.width}>
+          <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} />
+        </ScaledPreview>
+        <ShareBar doc={doc} profile={profile} exportRef={exportRef} renderKey={`${doc.id}:${doc.templateId}:${doc.updatedAt}`} />
+        <div className="grid grid-cols-2 gap-3">
+          <Button asChild variant="outline">
+            <Link href={`/create?edit=${doc.id}`}>
+              <Pencil /> Edit
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/create?duplicate=${doc.id}`}>
+              <Copy /> Make a copy
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="col-span-2">
+            <Link href={doc.type === "invoice" ? "/create?type=invoice" : "/create"}>
+              <Plus /> New {doc.type}
+            </Link>
+          </Button>
+        </div>
       </div>
-      <p className="mt-4 text-center text-sm text-muted-foreground">
-        Sharing to WhatsApp and downloading come in the next update.
-      </p>
+
+      {/* Full-size copy, off screen, used to make the image and PDF. */}
+      <div aria-hidden className="pointer-events-none fixed top-0 -left-[10000px]">
+        <div ref={exportRef} style={{ width: template.width }}>
+          <Template doc={doc} profile={profile} showFooterBrand={showFooterBrand} />
+        </div>
+      </div>
     </>
   );
 }

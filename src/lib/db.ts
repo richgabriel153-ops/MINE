@@ -150,3 +150,13 @@ export async function updateSettings(patch: Partial<Settings>): Promise<void> {
   const current = await getSettings();
   await db.put("meta", { ...current, ...patch }, "settings");
 }
+
+/** Remember which template a document uses (no other changes). */
+export async function setDocumentTemplate(id: string, templateId: TemplateId): Promise<DocumentRecord | undefined> {
+  const db = await getDb();
+  const doc = await db.get("documents", id);
+  if (!doc) return undefined;
+  const updated = { ...doc, templateId };
+  await db.put("documents", updated);
+  return updated;
+}
