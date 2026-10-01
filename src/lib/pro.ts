@@ -2,6 +2,8 @@
 export const FREE_HISTORY_LIMIT = 50;
 
 export const PRO_BENEFITS = [
+  { title: "InCeipt Assistant (AI)", text: "Just type “Receipt for Ada, 2 bags of rice at ₦45,000” and it's done for you." },
+  { title: "Tax accountant", text: "Income tax and VAT worked out under the Nigeria Tax Act 2025, with deadlines and a tax report." },
   { title: "Track who owes you", text: "Record part payments and see every outstanding balance." },
   { title: "Pay Now links", text: "Customers pay invoices online by card, transfer or USSD. Invoices update themselves." },
   { title: "Quotations & proforma invoices", text: "Send quotes and turn them into invoices in one tap." },
@@ -19,6 +21,8 @@ export const PRO_COMPARISON: { feature: string; free: string | boolean; pro: str
   { feature: "Quotations", free: false, pro: true },
   { feature: "Expenses & profit", free: false, pro: true },
   { feature: "Staff accounts", free: false, pro: true },
+  { feature: "AI assistant", free: false, pro: true },
+  { feature: "Tax estimates & report", free: false, pro: true },
   { feature: "Templates", free: "3", pro: "5" },
   { feature: "“Made with InCeipt” line", free: "Shown", pro: "Removed" },
   { feature: "History you can see", free: `Latest ${FREE_HISTORY_LIMIT}`, pro: "Everything" },

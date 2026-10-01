@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   BadgeCheck,
+  Calculator,
   ChevronRight,
   ClipboardList,
   FileText,
@@ -37,6 +38,7 @@ const ITEMS: Item[] = [
   { href: "/quotes", label: "Quotations", text: "Quotes and proforma invoices", icon: FileText, pro: (c) => c.quotes },
   { href: "/expenses", label: "Expenses", text: "Log what you spend", icon: Wallet, show: (_c, _m, r) => r === "owner", pro: (c) => c.expenses },
   { href: "/profit", label: "Profit", text: "Sales, expenses and profit", icon: LineChart, show: (_c, _m, r) => r === "owner", pro: (c) => c.expenses },
+  { href: "/tax", label: "Tax", text: "Income tax, VAT and deadlines", icon: Calculator, show: (_c, _m, r) => r === "owner", pro: (c) => c.taxes },
   { href: "/payouts", label: "Get paid online", text: "Pay Now links on invoices", icon: Landmark, show: (_c, _m, r) => r === "owner", pro: (c) => c.payLinks, cloudOnly: true },
   { href: "/staff", label: "Staff", text: "Invite people to help you", icon: Users, show: (_c, _m, r) => r === "owner", pro: (c) => c.manageStaff, cloudOnly: true },
   { href: "/activity", label: "Activity log", text: "Who did what, and when", icon: ClipboardList, show: (_c, _m, r) => r === "owner", pro: (c) => c.manageStaff, cloudOnly: true },

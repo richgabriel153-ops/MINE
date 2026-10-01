@@ -27,6 +27,10 @@ export interface Permissions {
   manageStaff: boolean;
   /** Add Pay Now links to invoices. */
   payLinks: boolean;
+  /** Tax estimates and tax reports. Owner + Pro. */
+  taxes: boolean;
+  /** The InCeipt Assistant (AI). Pro; staff can use it within their own permissions. */
+  assistant: boolean;
 }
 
 export function permissionsFor(role: Role, isPro: boolean): Permissions {
@@ -43,6 +47,8 @@ export function permissionsFor(role: Role, isPro: boolean): Permissions {
     manageBusiness: owner,
     manageStaff: isPro && owner,
     payLinks: isPro,
+    taxes: isPro && owner,
+    assistant: isPro,
   };
 }
 
