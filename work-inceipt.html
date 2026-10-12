@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" style="--t-base: 62 69 128; --t-light: 96 105 176; --t-dark: 40 45 88; --t-deep: 22 25 52">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>InCeipt Case Study | Aether</title>
+  <meta name="description" content="How Aether built InCeipt, a receipt and invoice app for Nigerian small businesses with Paystack payments and an AI assistant." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e06b12'/%3E%3Ctext x='32' y='41' font-family='Arial' font-weight='700' font-size='24' fill='white' text-anchor='middle'%3EAE%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="subnav">
+    <a href="index.html" class="nav__logo" aria-label="Aether home"><span class="nav__mono">AE</span>AETHER</a>
+    <a href="index.html#contact" class="btn btn--white nav__cta" style="display:inline-flex">Book a free call</a>
+  </header>
+  <main id="content">
+    <section class="page-hero">
+      <div class="page-hero__inner">
+        <span class="eyebrow">Case study</span>
+        <h1>InCeipt: receipts, invoices and an AI assistant for small businesses</h1>
+        <p>A mobile-first app that lets business owners send professional receipts on WhatsApp in seconds, then grows with them into payments, staff accounts and AI-assisted bookkeeping.</p>
+      </div>
+    </section>
+    <article class="doc">
+      <dl class="facts">
+        <div><dt>Market</dt><dd>Nigerian SMEs</dd></div>
+        <div><dt>Platform</dt><dd>Installable web app</dd></div>
+        <div><dt>Pro plan</dt><dd>₦3,000 / month</dd></div>
+        <div><dt>Stack</dt><dd>Next.js, Supabase</dd></div>
+      </dl>
+
+      <h2>The challenge</h2>
+      <p>Many small businesses in Nigeria still write receipts by hand or send plain text messages to confirm payments. That makes them look less professional, makes records hard to keep, and leaves owners without a clear view of sales, debts and profit.</p>
+      <p>The goal was a tool that a shop owner could use on a basic phone in under a minute, without creating an account, and that could grow into a paid product for businesses that need more.</p>
+
+      <h2>What we built</h2>
+      <h3>A free tool that works in seconds</h3>
+      <ul>
+        <li>Receipts and invoices with the business name, logo and bank details on every document</li>
+        <li>Automatic totals, discounts, delivery fees, VAT and part payments, calculated in kobo to avoid rounding errors</li>
+        <li>One-tap sharing to WhatsApp as a light image, plus PDF download</li>
+        <li>No sign-up: records are stored on the phone and the app works offline once installed</li>
+      </ul>
+      <h3>A Pro plan that pays for itself</h3>
+      <ul>
+        <li>Monthly and yearly subscriptions through Paystack, with webhooks keeping accounts in sync</li>
+        <li>Pay Now links on invoices, so customers pay by card or transfer directly into the business account</li>
+        <li>Staff accounts with owner controls and an activity log</li>
+        <li>Expense tracking, a profit view, quotations and proforma invoices</li>
+        <li>An admin dashboard showing revenue, growth, usage and payment events</li>
+      </ul>
+      <h3>An AI assistant that takes action safely</h3>
+      <p>The InCeipt Assistant lets an owner type requests such as <em>"Record ₦32,500 from Ada's Kitchen, paid by transfer"</em>. Built on the Claude API with tool use, it prepares the record and <strong>asks for confirmation before saving anything</strong>. It also answers tax questions based on the Nigeria Tax Act 2025. A daily usage limit keeps AI costs predictable.</p>
+
+      <h2>How it is built</h2>
+      <ul>
+        <li><strong>Front end:</strong> Next.js App Router with Tailwind CSS, installable as a progressive web app</li>
+        <li><strong>Data:</strong> IndexedDB on the device for free users, Supabase with row-level security for Pro accounts</li>
+        <li><strong>Payments:</strong> Paystack subscriptions, subaccounts and verified webhooks</li>
+        <li><strong>AI:</strong> Claude API with tool use and confirm-before-save</li>
+        <li><strong>Quality:</strong> unit tests for money, totals, VAT and part payments, plus database tests</li>
+        <li><strong>Compliance:</strong> Terms of Service, Privacy Policy aligned with the Nigeria Data Protection Act 2023, and a Refund Policy</li>
+      </ul>
+
+      <h2>What this means for your project</h2>
+      <p>InCeipt shows the full range of what we deliver: AI agents that act on real data with the right safeguards, payment integrations, automation behind the scenes and an interface that non-technical people can use straight away. We bring the same approach to every client build, whatever its size.</p>
+
+      <p style="margin-top:30px; display:flex; flex-wrap:wrap; gap:12px">
+        <a href="https://mine-git-dev-jjjj-e73e.vercel.app" class="btn btn--white" target="_blank" rel="noopener" style="text-decoration:none">Open the live app ↗</a>
+        <a href="index.html#contact" class="btn btn--glass" style="text-decoration:none">Discuss your project</a>
+      </p>
+    </article>
+  </main>
+  <footer class="sub-footer">
+    <p>© <span id="year">2026</span> Aether AI Automation. All rights reserved.</p>
+    <nav aria-label="Footer"><a href="index.html">Home</a><a href="index.html#pricing">Pricing</a><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Service</a><a href="mailto:hello@yourdomain.com">hello@yourdomain.com</a></nav>
+  </footer>
+  <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>

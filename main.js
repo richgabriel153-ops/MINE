@@ -24,8 +24,8 @@
     {
       short: "AI Agents", kicker: "AI Agents & Chatbots",
       title: ["Answers that", "never sleep"],
-      text: "It's not just about replying faster. It's about every customer feeling heard, instantly. Our AI agents learn your business, qualify leads and book meetings, 24/7, in your brand voice.",
-      prices: [[1900, 2500], [4900, 6400], [7900, 9900]],
+      text: "Custom AI assistants trained on your products, policies and FAQs. They reply to customers in seconds, qualify leads and book appointments around the clock on your website, WhatsApp or Instagram.",
+      prices: [[149, 199], [349, 469], [749, 999]],
       theme: { base: "#e06b12", light: "#f7963a", dark: "#9a4207", deep: "#5c2604" },
       obj: { color: "#ff7d1f", sheen: "#ffc58f", accent: "#ffffff" },
       model: "chat",
@@ -33,8 +33,8 @@
     {
       short: "Workflows", kicker: "Workflow Automation",
       title: ["Work that", "runs itself"],
-      text: "It's not just about saving clicks. It's about your tools finally talking to each other. CRM, inbox, docs and finance stay in sync, with no copy-paste and no dropped hand-offs.",
-      prices: [[1500, 2000], [3900, 5200], [6500, 8400]],
+      text: "We connect your CRM, inbox, spreadsheets and payment tools so information moves on its own. Fewer manual steps, fewer errors, and hours returned to your team every week.",
+      prices: [[149, 199], [349, 469], [749, 999]],
       theme: { base: "#3b3b3e", light: "#5f5f64", dark: "#1f1f21", deep: "#121213" },
       obj: { color: "#2a2a2e", sheen: "#9a9aa3", accent: "#ededee" },
       model: "gear",
@@ -42,8 +42,8 @@
     {
       short: "Voice AI", kicker: "Voice AI Receptionist",
       title: ["Every call,", "answered"],
-      text: "Never send a customer to voicemail again. A natural-sounding AI receptionist picks up instantly, answers questions, books appointments and routes urgent calls to your team.",
-      prices: [[2400, 3200], [5600, 7200], [8900, 11500]],
+      text: "A natural-sounding AI receptionist that answers instantly, handles common questions, books appointments and passes urgent calls to the right person, day or night.",
+      prices: [[199, 259], [399, 529], [799, 1049]],
       theme: { base: "#a8121d", light: "#d42a35", dark: "#5e0910", deep: "#36050a" },
       obj: { color: "#e3192b", sheen: "#ff8a94", accent: "#ffffff" },
       model: "mic",
@@ -51,8 +51,8 @@
     {
       short: "Insights", kicker: "AI Insights & Reporting",
       title: ["Numbers that", "talk back"],
-      text: "Stop digging through dashboards. Get a plain-English brief every morning: what changed, why it matters and what to do next, sent straight to Slack or your inbox.",
-      prices: [[1200, 1600], [3200, 4200], [5400, 7000]],
+      text: "Automated reports that turn your sales, marketing and operations data into a clear daily summary of what changed, why it matters and what to do next.",
+      prices: [[149, 199], [349, 469], [749, 999]],
       theme: { base: "#8f9398", light: "#c3c6ca", dark: "#575b60", deep: "#2f3236" },
       obj: { color: "#f4f4f4", sheen: "#ffffff", accent: "#2d2d31" },
       model: "chart",
@@ -656,7 +656,7 @@
       gsap.from(r, { y: 50, opacity: 0, duration: 1.1, ease: "expo.out", scrollTrigger: { trigger: r, start: "top 88%", once: true } });
     });
 
-    [".cards .card", ".quotes .quote"].forEach((sel) => {
+    [".cards .card", ".uses__grid .use"].forEach((sel) => {
       const list = $$(sel);
       if (!list.length) return;
       gsap.from(list, {
@@ -745,30 +745,15 @@
   calc();
 
   /* ---------------------------------------------------------
-     Pricing toggle
+     Plan buttons pre-fill the budget in the contact form
      --------------------------------------------------------- */
-  const toggleBtns = $$(".toggle__btn");
-  const pill = $(".toggle__pill");
-  const placePill = (b) => { pill.style.width = b.offsetWidth + "px"; pill.style.transform = `translateX(${b.offsetLeft - 5}px)`; };
-  toggleBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      toggleBtns.forEach((b) => b.classList.toggle("is-active", b === btn));
-      placePill(btn);
-      const mode = btn.dataset.billing;
-      $$(".plan__price [data-" + mode + "]").forEach((p) => {
-        const next = p.dataset[mode];
-        if (!hasGSAP || reduceMotion) { p.textContent = next; return; }
-        gsap.to(p, { y: -14, opacity: 0, duration: 0.2, ease: "power2.in", onComplete: () => {
-          p.textContent = next;
-          gsap.fromTo(p, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "expo.out" });
-        } });
-      });
+  $$("[data-plan]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const sel = $("#fBudget");
+      const opt = [...sel.options].find((o) => o.text.startsWith(b.dataset.plan));
+      if (opt) sel.value = opt.value || opt.text;
     });
   });
-  const placeActive = () => placePill($(".toggle__btn.is-active"));
-  placeActive();
-  window.addEventListener("resize", placeActive);
-  if (document.fonts) document.fonts.ready.then(placeActive);
 
   /* ---------------------------------------------------------
      FAQ accordion
@@ -808,8 +793,14 @@
       input.closest(".field").classList.toggle("is-invalid", !valid);
       if (!valid) ok = false;
     });
+    const consent = form.elements.consent;
+    if (ok && !consent.checked) {
+      ok = false;
+      status.textContent = "Please agree to the Privacy Policy so we can reply to you.";
+    } else if (!ok) {
+      status.textContent = "Please enter your name and a valid email address.";
+    }
     if (!ok) {
-      status.textContent = "Please add your name and a valid email.";
       status.classList.add("is-err");
       if (hasGSAP) gsap.fromTo(form, { x: -8 }, { x: 0, duration: 0.6, ease: "elastic.out(1, 0.3)" });
       return;
@@ -825,10 +816,10 @@
         await new Promise((r) => setTimeout(r, 900)); // demo mode
       }
       form.reset();
-      status.textContent = "Thanks! We'll be in touch within one business day.";
+      status.textContent = "Thank you. We have received your enquiry and will reply within one business day.";
       status.classList.add("is-ok");
     } catch (err) {
-      status.textContent = "Something went wrong. Please email us directly.";
+      status.textContent = "Your message could not be sent. Please email us at hello@yourdomain.com.";
       status.classList.add("is-err");
     } finally {
       btn.disabled = false;

@@ -16,8 +16,16 @@ Open `index.html` directly, or serve the folder:
 python3 -m http.server 8000   # then visit http://localhost:8000
 ```
 
+## Pages
+- `index.html`: homepage (services, portfolio, process, pricing, FAQ, contact)
+- `work-inceipt.html`: InCeipt case study
+- `privacy.html`, `terms.html`: legal pages (have them reviewed by a lawyer)
+- `404.html`: not-found page (used automatically by Vercel)
+
 ## Customize
 - **Brand name / copy**: edit `index.html` ("Aether" is a placeholder).
+- **Contact details**: replace `hello@yourdomain.com`, the WhatsApp number `+234 000 000 0000` / `wa.me/2340000000000` and the Fiverr link `https://www.fiverr.com/` in every `.html` file.
+- **Package prices**: the pricing cards in `index.html`, the budget options in the contact form, the `priceRange` in the JSON-LD block, and `prices` in `SLIDES` (`main.js`).
 - **Services, colors and prices**: edit the `SLIDES` array at the top of `main.js` (copy, theme palette, 3D object colors and prices).
 - **Contact form**: set `FORM_ENDPOINT` in `main.js` (for example, a Formspree URL) to receive submissions.
 - **Deploy**: any static host (GitHub Pages, Netlify, Vercel). Just upload the folder.
