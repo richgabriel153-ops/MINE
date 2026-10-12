@@ -1,5 +1,6 @@
 /* =========================================================
-   Aether — interactions, smooth scroll & WebGL scene
+   Aether — 3D service showcase, theme morphing,
+   smooth scroll & page interactions
    ========================================================= */
 (() => {
   "use strict";
@@ -7,13 +8,61 @@
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   const hasGSAP = typeof window.gsap !== "undefined";
+  const hasTHREE = typeof window.THREE !== "undefined";
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const fmt = new Intl.NumberFormat("en-US");
+  const money = (n) => "$" + fmt.format(Math.round(n));
 
   document.body.classList.add("is-loading");
   $("#year").textContent = new Date().getFullYear();
 
-  // Global pointer state (normalised -1..1), shared by the 3D scene & UI
+  /* ---------------------------------------------------------
+     Services shown in the hero carousel ("products")
+     --------------------------------------------------------- */
+  const SLIDES = [
+    {
+      short: "AI Agents", kicker: "AI Agents & Chatbots",
+      title: ["Answers that", "never sleep"],
+      text: "It's not just about replying faster. It's about every customer feeling heard, instantly. Our AI agents learn your business, qualify leads and book meetings, 24/7, in your brand voice.",
+      prices: [[1900, 2500], [4900, 6400], [7900, 9900]],
+      theme: { base: "#e06b12", light: "#f7963a", dark: "#9a4207", deep: "#5c2604" },
+      obj: { color: "#ff7d1f", sheen: "#ffc58f", accent: "#ffffff" },
+      model: "chat",
+    },
+    {
+      short: "Workflows", kicker: "Workflow Automation",
+      title: ["Work that", "runs itself"],
+      text: "It's not just about saving clicks. It's about your tools finally talking to each other. CRM, inbox, docs and finance stay in sync, with no copy-paste and no dropped hand-offs.",
+      prices: [[1500, 2000], [3900, 5200], [6500, 8400]],
+      theme: { base: "#3b3b3e", light: "#5f5f64", dark: "#1f1f21", deep: "#121213" },
+      obj: { color: "#2a2a2e", sheen: "#9a9aa3", accent: "#ededee" },
+      model: "gear",
+    },
+    {
+      short: "Voice AI", kicker: "Voice AI Receptionist",
+      title: ["Every call,", "answered"],
+      text: "Never send a customer to voicemail again. A natural-sounding AI receptionist picks up instantly, answers questions, books appointments and routes urgent calls to your team.",
+      prices: [[2400, 3200], [5600, 7200], [8900, 11500]],
+      theme: { base: "#a8121d", light: "#d42a35", dark: "#5e0910", deep: "#36050a" },
+      obj: { color: "#e3192b", sheen: "#ff8a94", accent: "#ffffff" },
+      model: "mic",
+    },
+    {
+      short: "Insights", kicker: "AI Insights & Reporting",
+      title: ["Numbers that", "talk back"],
+      text: "Stop digging through dashboards. Get a plain-English brief every morning: what changed, why it matters and what to do next, sent straight to Slack or your inbox.",
+      prices: [[1200, 1600], [3200, 4200], [5400, 7000]],
+      theme: { base: "#8f9398", light: "#c3c6ca", dark: "#575b60", deep: "#2f3236" },
+      obj: { color: "#f4f4f4", sheen: "#ffffff", accent: "#2d2d31" },
+      model: "chart",
+    },
+  ];
+  const N = SLIDES.length;
+  let current = 0;
+  let sizeIdx = 0;
+
+  // Global pointer (normalised -1..1)
   const pointer = { x: 0, y: 0, sx: 0, sy: 0 };
   window.addEventListener("pointermove", (e) => {
     pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -21,12 +70,39 @@
   }, { passive: true });
 
   /* ---------------------------------------------------------
-     Smooth scroll (Lenis) + GSAP ScrollTrigger
+     Theme morphing — writes RGB triplets into CSS variables
+     --------------------------------------------------------- */
+  const root = document.documentElement;
+  const metaTheme = $('meta[name="theme-color"]');
+  const hexToRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const themeNow = {};
+  const KEYS = ["base", "light", "dark", "deep"];
+  function writeTheme(t) {
+    KEYS.forEach((k) => root.style.setProperty("--t-" + k, t[k].map(Math.round).join(" ")));
+  }
+  KEYS.forEach((k) => (themeNow[k] = hexToRgb(SLIDES[0].theme[k])));
+  writeTheme(themeNow);
+
+  function morphTheme(theme, duration = 1.2) {
+    const from = {}; KEYS.forEach((k) => (from[k] = themeNow[k].slice()));
+    const to = {}; KEYS.forEach((k) => (to[k] = hexToRgb(theme[k])));
+    const apply = (p) => {
+      KEYS.forEach((k) => { themeNow[k] = from[k].map((v, i) => v + (to[k][i] - v) * p); });
+      writeTheme(themeNow);
+    };
+    metaTheme.setAttribute("content", theme.base);
+    if (!hasGSAP || reduceMotion) return apply(1);
+    const o = { p: 0 };
+    gsap.to(o, { p: 1, duration, ease: "power2.inOut", onUpdate: () => apply(o.p), overwrite: true });
+  }
+
+  /* ---------------------------------------------------------
+     Smooth scroll (Lenis) + ScrollTrigger
      --------------------------------------------------------- */
   let lenis = null;
   if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
   if (typeof window.Lenis !== "undefined" && !reduceMotion) {
-    lenis = new Lenis({ duration: 1.25, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
+    lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
     lenis.stop();
     if (hasGSAP) {
       lenis.on("scroll", ScrollTrigger.update);
@@ -37,27 +113,31 @@
       requestAnimationFrame(raf);
     }
   }
+  const scrollToEl = (target, offset = 0) => {
+    if (lenis) lenis.scrollTo(target, { offset, duration: 1.5 });
+    else if (target === 0) window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    else target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  };
 
-  // Anchor links glide with Lenis
   $$('a[href^="#"]').forEach((a) => {
     a.addEventListener("click", (e) => {
       const id = a.getAttribute("href");
-      const target = id === "#top" ? document.body : $(id);
-      if (!target) return;
+      const target = id === "#top" ? 0 : $(id);
+      if (target === null) return;
       e.preventDefault();
       closeMenu();
-      if (lenis) lenis.scrollTo(target, { offset: id === "#top" ? 0 : -40, duration: 1.6 });
-      else target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+      scrollToEl(target, -20);
     });
   });
 
   /* ---------------------------------------------------------
-     Navigation: hide on scroll down, mobile menu
+     Navigation
      --------------------------------------------------------- */
   const nav = $("#nav");
   let lastY = 0;
   const onScrollNav = (y) => {
-    nav.classList.toggle("is-hidden", y > lastY && y > 200);
+    nav.classList.toggle("is-scrolled", y > 40);
+    nav.classList.toggle("is-hidden", y > lastY && y > window.innerHeight * 0.8);
     lastY = y;
   };
   if (lenis) lenis.on("scroll", ({ scroll }) => onScrollNav(scroll));
@@ -78,309 +158,486 @@
   });
 
   /* ---------------------------------------------------------
-     WebGL: iridescent noise orb + particle field
+     3D stage
      --------------------------------------------------------- */
-  const scene3D = initScene();
+  const hero = $("#hero");
+  const stage = hasTHREE ? initStage() : null;
 
-  function initScene() {
-    if (typeof window.THREE === "undefined") return null;
-    const canvas = $("#webgl");
+  function initStage() {
+    const canvas = $("#stage3d");
     let renderer;
     try {
       renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
-    } catch (err) {
-      return null;
-    }
+    } catch (err) { return null; }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-    camera.position.set(0, 0, 7);
+    const FOV = 30, CAM_Z = 10;
+    const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
+    camera.position.set(0, 0, CAM_Z);
 
-    const noiseGLSL = `
-      vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
-      vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
-      vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
-      vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
-      float snoise(vec3 v){
-        const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);
-        vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
-        vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
-        vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;
-        i=mod289(i);
-        vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
-        float n_=0.142857142857;vec3 ns=n_*D.wyz-D.xzx;
-        vec4 j=p-49.0*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);
-        vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);
-        vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
-        vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));
-        vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
-        vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
-        vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
-        p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
-        vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;
-        return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
-      }`;
-
-    // ---- Orb ----
-    const orbUniforms = {
-      uTime: { value: 0 },
-      uAmp: { value: 0.28 },
-      uFreq: { value: 1.05 },
-      uShift: { value: 0 },
-      uMouse: { value: new THREE.Vector2() },
-      uHover: { value: 0 },
-      uDim: { value: 0 },
+    // Studio environment: soft boxes reflected in the glossy surfaces
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const env = new THREE.Scene();
+    env.add(new THREE.Mesh(new THREE.SphereGeometry(20, 32, 16), new THREE.MeshBasicMaterial({ color: 0x2c2c2c, side: THREE.BackSide })));
+    const softbox = (w, h, k, p) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k), side: THREE.DoubleSide }));
+      m.position.set(...p); m.lookAt(0, 0, 0); env.add(m);
     };
-    const orbMat = new THREE.ShaderMaterial({
-      uniforms: orbUniforms,
-      vertexShader: `
-        uniform float uTime, uAmp, uFreq, uHover; uniform vec2 uMouse;
-        varying vec3 vNormal; varying vec3 vView; varying float vDisp; varying vec3 vPos;
-        ${noiseGLSL}
-        void main(){
-          vec3 p = position;
-          float t = uTime * 0.28;
-          float n = snoise(normal * uFreq + vec3(t, t * 0.6, -t * 0.4));
-          n += 0.18 * snoise(normal * uFreq * 1.9 - vec3(t * 1.2));
-          // bulge toward pointer
-          vec3 m = normalize(vec3(uMouse, 1.2));
-          float pull = smoothstep(0.55, 1.0, dot(normal, m)) * (0.18 + uHover * 0.25);
-          float d = n * (uAmp + uHover * 0.12) + pull;
-          p += normal * d;
-          vDisp = d; vPos = p;
-          vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          vView = normalize(-mv.xyz);
-          vNormal = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * mv;
-        }`,
-      fragmentShader: `
-        uniform float uTime, uShift, uDim;
-        varying vec3 vNormal; varying vec3 vView; varying float vDisp; varying vec3 vPos;
-        vec3 palette(float t){
-          // violet -> indigo -> cyan -> pink cosine palette
-          vec3 a = vec3(0.55, 0.42, 0.78);
-          vec3 b = vec3(0.45, 0.40, 0.30);
-          vec3 c = vec3(1.0, 1.0, 1.0);
-          vec3 d = vec3(0.00, 0.25, 0.55);
-          return a + b * cos(6.28318 * (c * t + d));
-        }
-        void main(){
-          float fres = pow(1.0 - max(dot(normalize(vNormal), normalize(vView)), 0.0), 2.2);
-          float t = vDisp * 1.6 + vPos.y * 0.18 + uTime * 0.04 + uShift;
-          vec3 col = palette(t);
-          vec3 deep = vec3(0.05, 0.03, 0.14);
-          col = mix(deep, col, 0.35 + fres * 0.9);
-          // soft specular band
-          col += vec3(0.9, 0.85, 1.0) * pow(fres, 4.0) * 0.6;
-          col += palette(t + 0.3) * smoothstep(0.15, 0.45, vDisp) * 0.35;
-          col *= mix(1.0, 0.6, uDim);
-          gl_FragColor = vec4(col, 1.0);
-        }`,
+    softbox(10, 4, 5, [0, 8, 3]);
+    softbox(4, 9, 2.6, [-8, 1, 4]);
+    softbox(3, 7, 1.6, [8, -1, 3]);
+    softbox(9, 2, 1.2, [0, -7, 5]);
+    softbox(3, 3, 3.5, [3, 4, 8]);
+    scene.environment = pmrem.fromScene(env, 0.035).texture;
+
+    const key = new THREE.DirectionalLight(0xffffff, 1.6);
+    key.position.set(3, 5, 6);
+    scene.add(key, new THREE.AmbientLight(0xffffff, 0.25));
+
+    // ---- Geometry helpers ----
+    const rrect = (w, h, r) => {
+      const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+      s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+      s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+      s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+      return s;
+    };
+    const puff = (shape, depth = 0.45, bevel = 0.3) => {
+      const g = new THREE.ExtrudeGeometry(shape, {
+        depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 14, curveSegments: 48,
+      });
+      g.center(); g.computeVertexNormals();
+      return g;
+    };
+    const makeMats = (o) => ({
+      main: new THREE.MeshPhysicalMaterial({
+        color: o.color, roughness: 0.34, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.14,
+        sheen: 0.6, sheenColor: new THREE.Color(o.sheen), sheenRoughness: 0.45,
+      }),
+      accent: new THREE.MeshPhysicalMaterial({ color: o.accent, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1 }),
     });
-    const isSmall = window.innerWidth < 760;
-    const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, isSmall ? 48 : 96), orbMat);
-    scene.add(orb);
 
-    // ---- Glow halo behind the orb ----
-    const haloMat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      uniforms: { uShift: orbUniforms.uShift, uTime: orbUniforms.uTime, uDim: orbUniforms.uDim },
-      vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-      fragmentShader: `
-        varying vec2 vUv; uniform float uShift, uTime, uDim;
-        void main(){
-          vec2 p = vUv - 0.5; float d = length(p);
-          float a = smoothstep(0.5, 0.0, d);
-          float ang = atan(p.y, p.x) + uTime * 0.15 + uShift * 3.0;
-          vec3 c1 = vec3(0.55, 0.36, 0.96), c2 = vec3(0.13, 0.83, 0.93), c3 = vec3(0.96, 0.45, 0.71);
-          vec3 col = mix(c1, c2, 0.5 + 0.5 * sin(ang));
-          col = mix(col, c3, 0.5 + 0.5 * sin(ang * 2.0 + 1.3) * 0.6);
-          gl_FragColor = vec4(col, pow(a, 2.4) * 0.55 * (1.0 - uDim * 0.5));
-        }`,
+    const BUILDERS = {
+      chat(m) {
+        const g = new THREE.Group();
+        const w = 2.5, h = 1.8, r = 0.6, x = -w / 2, y = -h / 2;
+        const s = new THREE.Shape();
+        s.moveTo(x + 1.0, y);
+        s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+        s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+        s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+        s.quadraticCurveTo(x + 0.3, y - 0.25, x + 0.15, y - 0.62);
+        s.quadraticCurveTo(x + 0.7, y - 0.4, x + 1.0, y);
+        const body = new THREE.Mesh(puff(s, 0.5, 0.36), m.main);
+        g.add(body);
+        const dotGeo = new THREE.SphereGeometry(0.19, 32, 16);
+        [-0.62, 0, 0.62].forEach((dx, i) => {
+          const d = new THREE.Mesh(dotGeo, m.accent);
+          d.position.set(dx, 0.05, 0.6); d.scale.z = 0.6;
+          d.userData.phase = i * 0.6;
+          g.add(d);
+        });
+        g.userData.update = (t) => {
+          g.children.forEach((c) => { if (c.userData.phase !== undefined) c.position.y = 0.05 + Math.max(0, Math.sin(t * 4 - c.userData.phase * 2)) * 0.14; });
+        };
+        return g;
+      },
+      gear(m) {
+        const g = new THREE.Group();
+        const gearShape = (R, r, teeth, hole) => {
+          const s = new THREE.Shape(), step = (Math.PI * 2) / teeth;
+          for (let i = 0; i < teeth; i++) {
+            const a = i * step;
+            const pts = [[r, a], [R, a + step * 0.14], [R, a + step * 0.44], [r, a + step * 0.58]];
+            pts.forEach(([rad, ang], j) => {
+              const px = Math.cos(ang) * rad, py = Math.sin(ang) * rad;
+              if (i === 0 && j === 0) s.moveTo(px, py); else s.lineTo(px, py);
+            });
+          }
+          s.closePath();
+          const hp = new THREE.Path(); hp.absarc(0, 0, hole, 0, Math.PI * 2, true); s.holes.push(hp);
+          return s;
+        };
+        const big = new THREE.Mesh(puff(gearShape(1.25, 0.98, 10, 0.4), 0.42, 0.16), m.main);
+        const small = new THREE.Mesh(puff(gearShape(0.72, 0.55, 8, 0.22), 0.36, 0.13), m.accent);
+        small.position.set(1.32, 1.02, -0.25);
+        const hub = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.09, 20, 64), m.accent);
+        hub.position.z = 0.38;
+        g.add(big, small, hub);
+        g.userData.update = (t) => { big.rotation.z = t * 0.35; small.rotation.z = -t * 0.35 * (10 / 8) + 0.2; };
+        return g;
+      },
+      mic(m) {
+        const g = new THREE.Group();
+        const head = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 0.85, 20, 48), m.main);
+        head.position.y = 0.5;
+        const band = new THREE.Mesh(new THREE.TorusGeometry(0.565, 0.05, 16, 72), m.accent);
+        band.rotation.x = Math.PI / 2; band.position.y = 0.35;
+        const band2 = band.clone(); band2.position.y = 0.62;
+        const holder = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.075, 20, 72, Math.PI), m.main);
+        holder.rotation.z = Math.PI; holder.position.y = 0.3;
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.62, 24), m.main);
+        stem.position.y = -0.85;
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.16, 64), m.main);
+        base.position.y = -1.2;
+        // sound waves
+        const waves = [1, 2].map((k) => {
+          const w = new THREE.Mesh(new THREE.TorusGeometry(0.9 + k * 0.32, 0.045, 12, 64, Math.PI * 0.42), m.accent);
+          w.rotation.z = -Math.PI * 0.21; w.position.set(0, 0.5, 0); w.userData.k = k;
+          const w2 = w.clone(); w2.rotation.z = Math.PI - Math.PI * 0.21; w2.userData.k = k;
+          return [w, w2];
+        }).flat();
+        g.add(head, band, band2, holder, stem, base, ...waves);
+        g.userData.update = (t) => {
+          waves.forEach((w) => {
+            const p = (Math.sin(t * 3 - w.userData.k) + 1) / 2;
+            w.scale.setScalar(0.92 + p * 0.12);
+          });
+        };
+        return g;
+      },
+      chart(m) {
+        const g = new THREE.Group();
+        const bars = [0.95, 1.6, 2.3].map((h, i) => {
+          const b = new THREE.Mesh(puff(rrect(0.56, h, 0.2), 0.42, 0.14), m.main);
+          b.position.set(-0.82 + i * 0.82, -1.15 + h / 2, 0);
+          b.userData.h = h;
+          return b;
+        });
+        const curve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(-1.35, -0.35, 0.55), new THREE.Vector3(-0.55, 0.25, 0.6),
+          new THREE.Vector3(0.1, 0.05, 0.62), new THREE.Vector3(1.05, 1.3, 0.62),
+        ]);
+        const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 80, 0.075, 16, false), m.accent);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.42, 32), m.accent);
+        const end = curve.getPoint(1), tan = curve.getTangent(1);
+        cone.position.copy(end).addScaledVector(tan, 0.15);
+        cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tan);
+        g.add(...bars, tube, cone);
+        g.userData.update = (t) => {
+          bars.forEach((b, i) => { b.scale.y = 1 + Math.sin(t * 1.6 + i) * 0.04; b.position.y = -1.15 + (b.userData.h * b.scale.y) / 2; });
+        };
+        return g;
+      },
+    };
+
+    // Normalise each model to a ~3 unit box, centred
+    const normalise = (g) => {
+      const box = new THREE.Box3().setFromObject(g);
+      const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+      const k = 3 / Math.max(size.x, size.y);
+      const wrap = new THREE.Group();
+      g.position.sub(c);
+      wrap.add(g); wrap.scale.setScalar(k);
+      wrap.userData.update = g.userData.update;
+      return wrap;
+    };
+
+    // Soft contact shadow texture
+    const shadowTex = (() => {
+      const c = document.createElement("canvas"); c.width = c.height = 128;
+      const x = c.getContext("2d"), gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+      gr.addColorStop(0, "rgba(0,0,0,0.55)"); gr.addColorStop(0.5, "rgba(0,0,0,0.22)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+      x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+      return new THREE.CanvasTexture(c);
+    })();
+    const makeShadow = () => new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+
+    const items = SLIDES.map((sl, i) => {
+      const mats = makeMats(sl.obj);
+      const model = normalise(BUILDERS[sl.model](mats));
+      const pivot = new THREE.Group(); pivot.add(model);
+      const shadow = makeShadow();
+      const thumbModel = model.clone(true); thumbModel.userData.update = null;
+      const thumb = new THREE.Group(); thumb.add(thumbModel);
+      scene.add(pivot, shadow, thumb);
+      pivot.visible = shadow.visible = i === 0;
+      thumb.visible = false;
+      return {
+        pivot, model, shadow, thumb,
+        st: { x: 0, y: 0, rot: 0, s: i === 0 ? 0 : 1, visible: i === 0 }, // animated by GSAP
+        th: { s: 0 },
+      };
     });
-    const halo = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), haloMat);
-    halo.position.z = -1.5;
-    scene.add(halo);
 
-    // ---- Orbiting ring ----
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(2.25, 0.008, 8, 220),
-      new THREE.MeshBasicMaterial({ color: 0xb4a7ff, transparent: true, opacity: 0.35 })
-    );
-    ring.rotation.x = 1.25;
-    scene.add(ring);
-    const ring2 = ring.clone();
-    ring2.material = ring.material.clone();
-    ring2.material.color.set(0x67e8f9);
-    ring2.material.opacity = 0.2;
-    ring2.scale.setScalar(1.25);
-    ring2.rotation.set(1.0, 0.5, 0);
-    scene.add(ring2);
-
-    // ---- Particles ----
-    const count = isSmall ? 900 : 2200;
-    const pos = new Float32Array(count * 3);
-    const seed = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      const r = 3 + Math.random() * 9;
-      const th = Math.random() * Math.PI * 2;
-      const ph = Math.acos(2 * Math.random() - 1);
-      pos[i * 3] = r * Math.sin(ph) * Math.cos(th) * 1.6;
-      pos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
-      pos[i * 3 + 2] = r * Math.cos(ph) - 4;
-      seed[i] = Math.random();
-    }
-    const pGeo = new THREE.BufferGeometry();
-    pGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    pGeo.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
-    const pMat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      uniforms: { uTime: orbUniforms.uTime, uPR: { value: renderer.getPixelRatio() } },
-      vertexShader: `
-        attribute float aSeed; uniform float uTime, uPR; varying float vSeed;
-        void main(){
-          vSeed = aSeed;
-          vec3 p = position;
-          p.y += sin(uTime * 0.3 + aSeed * 30.0) * 0.25;
-          p.x += cos(uTime * 0.2 + aSeed * 20.0) * 0.25;
-          vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          gl_PointSize = (1.5 + aSeed * 3.0) * uPR * (8.0 / -mv.z);
-          gl_Position = projectionMatrix * mv;
-        }`,
-      fragmentShader: `
-        varying float vSeed;
-        void main(){
-          float d = length(gl_PointCoord - 0.5);
-          float a = smoothstep(0.5, 0.0, d);
-          vec3 col = mix(vec3(0.66, 0.55, 1.0), vec3(0.4, 0.9, 1.0), vSeed);
-          if (vSeed > 0.85) col = vec3(1.0, 0.6, 0.85);
-          gl_FragColor = vec4(col, a * 0.7);
-        }`,
-    });
-    const particles = new THREE.Points(pGeo, pMat);
-    scene.add(particles);
-
-    const group = { orb, halo, ring, ring2 };
-    const state = { scroll: 0, targetX: 0, x: 0, y: 0, scale: 1, targetScale: 1, intro: 0, hover: 0 };
-
-    function resize() {
-      const w = window.innerWidth, h = window.innerHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
+    // ---- Layout: map DOM anchors to world space ----
+    const anchor = $("#stageAnchor"), thumbBtn = $("#nextThumb");
+    const L = { visW: 1, visH: 1, cx: 0, cy: 0, scale: 1, tx: 0, ty: 0, tscale: 0.3 };
+    function layout() {
+      const r = hero.getBoundingClientRect();
+      renderer.setSize(r.width, r.height, false);
+      camera.aspect = r.width / r.height;
       camera.updateProjectionMatrix();
+      L.visH = 2 * CAM_Z * Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+      L.visW = L.visH * camera.aspect;
+      const toWorld = (el) => {
+        const a = el.getBoundingClientRect();
+        return {
+          x: ((a.left + a.width / 2 - r.left) / r.width - 0.5) * L.visW,
+          y: -((a.top + a.height / 2 - r.top) / r.height - 0.5) * L.visH,
+          h: (a.height / r.height) * L.visH, w: (a.width / r.width) * L.visW,
+        };
+      };
+      const a = toWorld(anchor), t = toWorld(thumbBtn);
+      L.cx = a.x; L.cy = a.y + a.h * 0.04;
+      L.scale = Math.min(a.h / 3.4, a.w / 3.1);
+      L.tx = t.x; L.ty = t.y + t.h * 0.06; L.tscale = t.h / 4.2;
     }
-    resize();
-    window.addEventListener("resize", resize);
+    layout();
+    window.addEventListener("resize", layout);
+    if (document.fonts) document.fonts.ready.then(layout);
 
+    // ---- Drag to rotate (with snap-back to the front face) ----
+    const drag = { on: false, x0: 0, last: 0, t0: 0, rot: 0, vel: 0, target: 0, moved: 0 };
+    hero.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("a, button, input")) return;
+      drag.on = true; drag.x0 = drag.last = e.clientX; drag.t0 = performance.now(); drag.moved = 0;
+      timer.pause();
+    });
+    window.addEventListener("pointermove", (e) => {
+      if (!drag.on) return;
+      const dx = e.clientX - drag.last;
+      drag.last = e.clientX; drag.moved += Math.abs(dx);
+      drag.rot += dx * 0.012; drag.vel = dx * 0.012;
+    });
+    window.addEventListener("pointerup", (e) => {
+      if (!drag.on) return;
+      drag.on = false;
+      const dx = e.clientX - drag.x0, dt = performance.now() - drag.t0;
+      // quick horizontal flick on touch = navigate
+      if (e.pointerType !== "mouse" && Math.abs(dx) > 60 && dt < 350) {
+        drag.vel = 0; go(dx < 0 ? 1 : -1);
+      }
+      timer.resume();
+    });
+
+    let heroScroll = 0;
     const clock = new THREE.Clock();
-    let running = true;
-    document.addEventListener("visibilitychange", () => { running = !document.hidden; if (running) clock.getDelta(); });
+    let visible = true, t = 0;
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(hero);
 
     function render() {
       requestAnimationFrame(render);
-      if (!running) return;
       const dt = Math.min(clock.getDelta(), 0.05);
-      const speed = reduceMotion ? 0.15 : 1;
-      orbUniforms.uTime.value += dt * speed;
+      if (!visible || document.hidden) return;
+      t += dt * (reduceMotion ? 0.2 : 1);
 
-      pointer.sx += (pointer.x - pointer.sx) * 0.06;
-      pointer.sy += (pointer.y - pointer.sy) * 0.06;
-      orbUniforms.uMouse.value.set(pointer.sx, pointer.sy);
+      pointer.sx += (pointer.x - pointer.sx) * 0.05;
+      pointer.sy += (pointer.y - pointer.sy) * 0.05;
 
-      // Hover energy: stronger when pointer near orb centre
-      const near = 1 - Math.min(1, Math.hypot(pointer.x - state.x / 3, pointer.y) / 0.9);
-      state.hover += (Math.max(0, near) - state.hover) * 0.05;
-      orbUniforms.uHover.value = state.hover;
+      if (!drag.on) {
+        drag.rot += drag.vel; drag.vel *= 0.92;
+        if (Math.abs(drag.vel) < 0.002) {
+          const snap = Math.round(drag.rot / (Math.PI * 2)) * Math.PI * 2;
+          drag.rot += (snap - drag.rot) * 0.05;
+        }
+      }
 
-      // Scroll choreography
-      state.x += (state.targetX - state.x) * 0.05;
-      state.scale += (state.targetScale - state.scale) * 0.06;
-      const s = state.scale * (0.6 + 0.4 * state.intro);
-      orb.position.x = state.x;
-      orb.position.y = Math.sin(orbUniforms.uTime.value * 0.6) * 0.08;
-      orb.scale.setScalar(s);
-      orb.rotation.y += dt * 0.12 * speed;
-      orb.rotation.x = pointer.sy * 0.3;
-      orb.rotation.z = -pointer.sx * 0.2;
-
-      halo.position.x = state.x;
-      halo.scale.setScalar(s * (1 + state.hover * 0.15));
-      [ring, ring2].forEach((r, i) => {
-        r.position.x = state.x;
-        r.scale.setScalar(s * (i ? 1.25 : 1));
-        r.rotation.z += dt * (i ? -0.08 : 0.12) * speed;
+      const sway = reduceMotion ? 0 : Math.sin(t * 0.55) * 0.32;
+      const bob = reduceMotion ? 0 : Math.sin(t * 1.3) * 0.07;
+      items.forEach((it, i) => {
+        const s = it.st;
+        it.pivot.visible = it.shadow.visible = s.visible;
+        if (s.visible) {
+          const sc = L.scale * s.s;
+          it.pivot.position.set(L.cx + s.x * L.visW, L.cy + (bob + s.y) * L.scale + heroScroll * L.visH * 0.18, 0);
+          it.pivot.scale.setScalar(Math.max(sc, 0.0001));
+          it.pivot.rotation.set(-pointer.sy * 0.18 + 0.04, sway + drag.rot + s.rot + pointer.sx * 0.35, pointer.sx * -0.04);
+          if (it.model.userData.update && !reduceMotion) it.model.userData.update(t);
+          // contact shadow reacts to the float height
+          it.shadow.position.set(L.cx + s.x * L.visW, L.cy - 1.72 * L.scale + heroScroll * L.visH * 0.18, -0.5);
+          const k = 1 - bob * 1.6;
+          it.shadow.scale.set(2.6 * L.scale * s.s * k, 0.42 * L.scale * s.s * k, 1);
+          it.shadow.material.opacity = Math.min(1, s.s) * (0.85 - bob * 2);
+        }
+        const th = it.th;
+        it.thumb.visible = th.s > 0.001;
+        if (it.thumb.visible) {
+          it.thumb.position.set(L.tx, L.ty + Math.sin(t * 1.5) * 0.03, 0.5);
+          it.thumb.scale.setScalar(L.tscale * th.s);
+          it.thumb.rotation.set(0.1, t * 0.6, 0);
+        }
       });
-      ring.material.opacity = 0.35 * state.intro;
-      ring2.material.opacity = 0.2 * state.intro;
-
-      particles.rotation.y = orbUniforms.uTime.value * 0.02 + pointer.sx * 0.1;
-      particles.rotation.x = pointer.sy * 0.06;
-      particles.position.y = state.scroll * 3;
-
-      camera.position.x = pointer.sx * 0.25;
-      camera.position.y = pointer.sy * 0.2;
-      camera.lookAt(0, 0, 0);
 
       renderer.render(scene, camera);
     }
     render();
 
-    return { state, uniforms: orbUniforms, group };
+    return {
+      items,
+      setHeroScroll: (v) => { heroScroll = v; },
+      layout,
+    };
   }
 
-  // Drive orb position/colour from scroll progress
-  function updateSceneFromScroll() {
-    if (!scene3D) return;
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    const y = lenis ? lenis.scroll : window.scrollY;
-    const p = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
-    const wide = window.innerWidth > 1000;
-    scene3D.state.scroll = p;
-    scene3D.uniforms.uShift.value = p * 0.9;
-    // Gentle side-to-side drift through the page
-    const heroP = Math.min(1, y / window.innerHeight);
-    const drift = Math.sin(p * Math.PI * 4) * (wide ? 2.6 : 0.9);
-    scene3D.state.targetX = heroP * drift;
-    scene3D.state.targetScale = (wide ? 1 : 0.62) * (1 - heroP * (wide ? 0.3 : 0.25));
-    scene3D.uniforms.uAmp.value = 0.28 + heroP * 0.08;
-    scene3D.uniforms.uDim.value = heroP * (wide ? 0.55 : 0.75);
+  /* ---------------------------------------------------------
+     Carousel
+     --------------------------------------------------------- */
+  const el = {
+    kicker: $("#slideKicker"), a: $("#titleA"), b: $("#titleB"), text: $("#slideText"),
+    num: $("#slideNum"), total: $("#slideTotal"), now: $("#priceNow"), old: $("#priceOld"),
+    navActive: $("#navActive"), nextName: $("#nextName"), progress: $("#heroProgress"),
+  };
+  el.total.textContent = String(N).padStart(2, "0");
+  const priceState = { now: SLIDES[0].prices[0][0], old: SLIDES[0].prices[0][1] };
+  let busy = false;
+
+  function setPrice(animate = true) {
+    const [n, o] = SLIDES[current].prices[sizeIdx];
+    const apply = () => { el.now.textContent = money(priceState.now); el.old.textContent = money(priceState.old); };
+    if (!hasGSAP || !animate || reduceMotion) { priceState.now = n; priceState.old = o; return apply(); }
+    gsap.to(priceState, { now: n, old: o, duration: 0.9, ease: "expo.out", overwrite: true, onUpdate: apply });
   }
-  if (lenis) lenis.on("scroll", updateSceneFromScroll);
-  else window.addEventListener("scroll", updateSceneFromScroll, { passive: true });
-  window.addEventListener("resize", updateSceneFromScroll);
-  updateSceneFromScroll();
+
+  function showThumb(idx, animate = true) {
+    if (!stage) return;
+    stage.items.forEach((it, i) => {
+      const target = i === idx ? 1 : 0;
+      if (!hasGSAP || !animate) it.th.s = target;
+      else gsap.to(it.th, { s: target, duration: target ? 0.9 : 0.4, delay: target ? 0.5 : 0, ease: target ? "back.out(1.6)" : "power2.in", overwrite: true });
+    });
+    el.nextName.textContent = SLIDES[idx].short;
+  }
+
+  function go(dir) { goTo((current + dir + N) % N, dir); }
+
+  function goTo(next, dir = 1) {
+    if (next === current || busy) return;
+    busy = true;
+    const prev = current;
+    current = next;
+    const sl = SLIDES[next];
+    morphTheme(sl.theme);
+    el.num.textContent = String(next + 1).padStart(2, "0");
+    el.navActive.textContent = sl.short;
+    showThumb((next + 1) % N);
+    timer.restart();
+
+    if (!hasGSAP || reduceMotion) {
+      el.kicker.textContent = sl.kicker; el.a.textContent = sl.title[0]; el.b.textContent = sl.title[1]; el.text.textContent = sl.text;
+      if (stage) { stage.items[prev].st.visible = false; Object.assign(stage.items[next].st, { visible: true, x: 0, rot: 0, s: 1 }); }
+      setPrice(false); busy = false; return;
+    }
+
+    // Text out → swap → in
+    const lines = [el.a, el.b];
+    const tl = gsap.timeline({ onComplete: () => { busy = false; } });
+    tl.to(lines, { yPercent: -110, duration: 0.45, ease: "power3.in", stagger: 0.05 }, 0)
+      .to([el.kicker, el.text], { opacity: 0, y: -10, duration: 0.35, ease: "power2.in" }, 0)
+      .add(() => {
+        el.kicker.textContent = sl.kicker; el.a.textContent = sl.title[0]; el.b.textContent = sl.title[1]; el.text.textContent = sl.text;
+        setPrice();
+      })
+      .fromTo(lines, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: "expo.out", stagger: 0.08 })
+      .fromTo([el.kicker, el.text], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: "expo.out", stagger: 0.06 }, "<0.1");
+
+    // 3D: current flies out, next spins in from the other side
+    if (stage) {
+      const out = stage.items[prev].st, inn = stage.items[next].st;
+      gsap.killTweensOf([out, inn]);
+      gsap.to(out, { x: -dir * 0.62, rot: -dir * 1.6, s: 0.55, y: 0.2, duration: 0.85, ease: "power3.in", onComplete: () => { out.visible = false; } });
+      Object.assign(inn, { visible: true, x: dir * 0.62, rot: dir * 1.8, s: 0.55, y: -0.2 });
+      gsap.to(inn, { x: 0, rot: 0, s: 1, y: 0, duration: 1.4, delay: 0.38, ease: "expo.out" });
+    }
+  }
+
+  // Auto-advance with a progress line
+  const AUTO = 7;
+  const timer = (() => {
+    let tw = null, paused = false;
+    const start = () => {
+      if (!hasGSAP || reduceMotion) return;
+      if (tw) tw.kill();
+      tw = gsap.fromTo(el.progress, { scaleX: 0 }, { scaleX: 1, duration: AUTO, ease: "none", onComplete: () => go(1) });
+      if (paused) tw.pause();
+    };
+    return {
+      restart: start,
+      pause: () => { paused = true; tw && tw.pause(); },
+      resume: () => { paused = false; tw && tw.resume(); },
+    };
+  })();
+  new IntersectionObserver(([en]) => (en.isIntersecting ? timer.resume() : timer.pause()), { threshold: 0.4 }).observe(hero);
+
+  $("#prevBtn").addEventListener("click", () => go(-1));
+  $("#nextBtn").addEventListener("click", () => go(1));
+  $("#nextThumb").addEventListener("click", () => go(1));
+  window.addEventListener("keydown", (e) => {
+    if (e.target.closest("input, textarea")) return;
+    const r = hero.getBoundingClientRect();
+    if (r.bottom < window.innerHeight * 0.4) return;
+    if (e.key === "ArrowRight") go(1);
+    if (e.key === "ArrowLeft") go(-1);
+  });
+
+  // "Automations included" selector (the size circles)
+  $$(".size").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      sizeIdx = +btn.dataset.size;
+      $$(".size").forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-checked", String(on));
+      });
+      setPrice();
+      timer.restart();
+      if (stage && hasGSAP && !reduceMotion) {
+        const st = stage.items[current].st;
+        gsap.fromTo(st, { s: 0.92 }, { s: 1, duration: 0.9, ease: "elastic.out(1, 0.45)", overwrite: "auto" });
+      }
+    });
+  });
+
+  // Service cards jump to their 3D showcase
+  $$(".card[data-goto]").forEach((card) => {
+    const open = () => {
+      const idx = +card.dataset.goto;
+      scrollToEl(0);
+      setTimeout(() => goTo(idx, idx > current ? 1 : -1), lenis ? 700 : 300);
+    };
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+  });
+
+  setPrice(false);
+  showThumb(1, false);
 
   /* ---------------------------------------------------------
      Preloader → intro
      --------------------------------------------------------- */
   const loader = $("#loader");
-  const countEl = $("#loaderCount");
-  const introStart = performance.now();
-  const loadTime = reduceMotion ? 200 : 1400;
-  (function tickLoader() {
-    const k = Math.min(1, (performance.now() - introStart) / loadTime);
-    countEl.textContent = Math.round((1 - Math.pow(1 - k, 3)) * 100);
-    if (k < 1) requestAnimationFrame(tickLoader);
-    else finishLoading();
+  const bar = $("#loaderBar");
+  const t0 = performance.now();
+  const loadTime = reduceMotion ? 150 : 1100;
+  (function tick() {
+    const k = Math.min(1, (performance.now() - t0) / loadTime);
+    bar.style.transform = `scaleX(${1 - Math.pow(1 - k, 3)})`;
+    if (k < 1) requestAnimationFrame(tick); else finishLoading();
   })();
 
   function finishLoading() {
     document.body.classList.remove("is-loading");
     if (lenis) lenis.start();
+    if (stage) stage.layout();
     if (!hasGSAP) {
       loader.remove();
-      if (scene3D) scene3D.state.intro = 1;
+      if (stage) stage.items[0].st.s = 1;
       return;
     }
-    const tl = gsap.timeline();
-    tl.to(loader, { opacity: 0, duration: 0.8, ease: "power2.out", onComplete: () => loader.remove() })
-      .to(scene3D ? scene3D.state : {}, { intro: 1, duration: 2.2, ease: "expo.out" }, 0)
-      .from(".hero__title .word", { yPercent: 115, rotate: 4, duration: 1.3, ease: "expo.out", stagger: 0.06 }, 0.15)
-      .from(".hero .reveal", { y: 30, opacity: 0, duration: 1.1, ease: "expo.out", stagger: 0.1 }, 0.45)
-      .from(nav, { y: -40, opacity: 0, duration: 1, ease: "expo.out", clearProps: "transform" }, 0.3)
-      .from(".scroll-hint", { opacity: 0, duration: 1 }, 1);
+    const tl = gsap.timeline({ onComplete: () => timer.restart() });
+    tl.to(loader, { opacity: 0, duration: 0.7, ease: "power2.out", onComplete: () => loader.remove() })
+      .to(stage ? stage.items[0].st : {}, { s: 1, duration: 1.8, ease: "expo.out" }, 0.1)
+      .from(stage ? stage.items[0].st : {}, { rot: -2.2, y: -0.4, duration: 2, ease: "expo.out" }, 0.1)
+      .from([el.a, el.b], { yPercent: 110, duration: 1.2, ease: "expo.out", stagger: 0.08 }, 0.2)
+      .from(".hero__controls, .hero__kicker, .hero__text, .hero__ctas, .price, .sizes, .hero__tagline", { opacity: 0, y: 24, duration: 1, ease: "expo.out", stagger: 0.06 }, 0.35)
+      .from(nav, { opacity: 0, y: -20, duration: 0.9, ease: "expo.out", clearProps: "transform" }, 0.3);
     initScrollAnimations();
   }
 
@@ -388,137 +645,78 @@
      Scroll-driven animations
      --------------------------------------------------------- */
   function initScrollAnimations() {
-    // Generic reveals (excluding hero, handled by intro)
-    $$(".reveal").filter((el) => !el.closest(".hero")).forEach((el) => {
-      gsap.from(el, {
-        y: 60, opacity: 0, duration: 1.2, ease: "expo.out",
-        scrollTrigger: { trigger: el, start: "top 88%", once: true },
-      });
+    // Hero parallax as you leave it
+    ScrollTrigger.create({
+      trigger: hero, start: "top top", end: "bottom top", scrub: true,
+      onUpdate: (self) => stage && stage.setHeroScroll(self.progress),
+    });
+    gsap.to(".hero__grid", { yPercent: -12, opacity: 0.2, ease: "none", scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true } });
+
+    $$(".reveal").forEach((r) => {
+      gsap.from(r, { y: 50, opacity: 0, duration: 1.1, ease: "expo.out", scrollTrigger: { trigger: r, start: "top 88%", once: true } });
     });
 
-    // Staggered cards
     [".cards .card", ".quotes .quote"].forEach((sel) => {
-      const items = $$(sel);
-      if (!items.length) return;
-      gsap.from(items, {
-        y: 80, opacity: 0, rotateX: -12, duration: 1.3, ease: "expo.out", stagger: 0.12,
-        scrollTrigger: { trigger: items[0].parentElement, start: "top 82%", once: true },
+      const list = $$(sel);
+      if (!list.length) return;
+      gsap.from(list, {
+        y: 70, opacity: 0, rotateX: -10, duration: 1.2, ease: "expo.out", stagger: 0.1,
+        scrollTrigger: { trigger: list[0].parentElement, start: "top 82%", once: true },
       });
     });
 
-    // Hero parallax out
-    gsap.to(".hero__inner", {
-      yPercent: -18, opacity: 0, ease: "none",
-      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
-    });
-
-    // Statement: words light up as you scroll
     const st = $("#statement");
     st.innerHTML = st.textContent.trim().split(/\s+/).map((w) => `<span class="w">${w}</span>`).join(" ");
-    gsap.to($$(".w", st), {
-      opacity: 1, stagger: 0.08, ease: "none",
-      scrollTrigger: { trigger: st, start: "top 80%", end: "bottom 45%", scrub: true },
-    });
+    gsap.to($$(".w", st), { opacity: 1, stagger: 0.08, ease: "none", scrollTrigger: { trigger: st, start: "top 80%", end: "bottom 45%", scrub: true } });
 
-    // Process: pinned horizontal track
     const track = $("#processTrack");
-    const bar = $("#processBar");
+    const pbar = $("#processBar");
     const distance = () => Math.max(0, track.scrollWidth - window.innerWidth);
     gsap.to(track, {
       x: () => -distance(), ease: "none",
       scrollTrigger: {
         trigger: ".process", start: "top top", end: () => "+=" + (distance() + window.innerHeight * 0.4),
         pin: ".process__pin", scrub: 1, invalidateOnRefresh: true,
-        onUpdate: (self) => gsap.set(bar, { scaleX: self.progress }),
+        onUpdate: (self) => gsap.set(pbar, { scaleX: self.progress }),
       },
     });
-    gsap.from(".step", {
-      opacity: 0, y: 60, stagger: 0.1, duration: 1, ease: "expo.out",
-      scrollTrigger: { trigger: ".process", start: "top 70%", once: true },
-    });
+    gsap.from(".step", { opacity: 0, y: 60, stagger: 0.1, duration: 1, ease: "expo.out", scrollTrigger: { trigger: ".process", start: "top 70%", once: true } });
 
-    // Counters
-    $$("[data-count]").forEach((el) => {
-      const end = parseFloat(el.dataset.count);
-      const dec = parseInt(el.dataset.decimals || "0", 10);
-      const suf = el.dataset.suffix || "";
+    $$("[data-count]").forEach((c) => {
+      const end = parseFloat(c.dataset.count), dec = parseInt(c.dataset.decimals || "0", 10), suf = c.dataset.suffix || "";
       const o = { v: 0 };
-      gsap.to(o, {
-        v: end, duration: 2.2, ease: "expo.out",
-        scrollTrigger: { trigger: el, start: "top 90%", once: true },
-        onUpdate: () => { el.textContent = o.v.toFixed(dec) + suf; },
-      });
+      gsap.to(o, { v: end, duration: 2.2, ease: "expo.out", scrollTrigger: { trigger: c, start: "top 90%", once: true }, onUpdate: () => { c.textContent = o.v.toFixed(dec) + suf; } });
     });
 
-    // Footer wordmark rise
-    gsap.from(".footer__big", {
-      yPercent: 40, opacity: 0, ease: "none",
-      scrollTrigger: { trigger: ".footer", start: "top bottom", end: "bottom bottom", scrub: true },
-    });
+    gsap.from(".footer__big", { yPercent: 40, opacity: 0, ease: "none", scrollTrigger: { trigger: ".footer", start: "top bottom", end: "bottom bottom", scrub: true } });
 
     window.addEventListener("load", () => ScrollTrigger.refresh());
-    document.fonts && document.fonts.ready.then(() => ScrollTrigger.refresh());
+    if (document.fonts) document.fonts.ready.then(() => ScrollTrigger.refresh());
   }
 
   /* ---------------------------------------------------------
-     Custom cursor & magnetic buttons
+     Magnetic buttons + 3D tilt cards
      --------------------------------------------------------- */
   if (finePointer && !reduceMotion) {
-    const cursor = $(".cursor");
-    const dot = $(".cursor__dot");
-    const ring = $(".cursor__ring");
-    const label = $(".cursor__label");
-    const m = { x: innerWidth / 2, y: innerHeight / 2 }, r = { x: m.x, y: m.y };
-    window.addEventListener("pointermove", (e) => {
-      m.x = e.clientX; m.y = e.clientY;
-      dot.style.transform = `translate(${m.x}px, ${m.y}px) translate(-50%, -50%)`;
-    }, { passive: true });
-    (function loop() {
-      r.x += (m.x - r.x) * 0.16; r.y += (m.y - r.y) * 0.16;
-      ring.style.transform = `translate(${r.x}px, ${r.y}px) translate(-50%, -50%)`;
-      requestAnimationFrame(loop);
-    })();
-    document.addEventListener("pointerover", (e) => {
-      const lab = e.target.closest("[data-cursor]");
-      const hov = e.target.closest("a, button, summary, input, textarea, label");
-      cursor.classList.toggle("is-label", !!lab);
-      cursor.classList.toggle("is-hover", !lab && !!hov);
-      label.textContent = lab ? lab.dataset.cursor : "";
-    });
-    document.addEventListener("pointerleave", () => cursor.classList.remove("is-hover", "is-label"));
-
-    $$("[data-magnetic]").forEach((el) => {
-      el.addEventListener("pointermove", (e) => {
-        const b = el.getBoundingClientRect();
-        const x = e.clientX - b.left - b.width / 2;
-        const y = e.clientY - b.top - b.height / 2;
-        el.style.transform = `translate(${x * 0.25}px, ${y * 0.35}px)`;
+    $$("[data-magnetic]").forEach((m) => {
+      m.addEventListener("pointermove", (e) => {
+        const b = m.getBoundingClientRect();
+        m.style.transform = `translate(${(e.clientX - b.left - b.width / 2) * 0.22}px, ${(e.clientY - b.top - b.height / 2) * 0.32}px)`;
       });
-      el.addEventListener("pointerleave", () => { el.style.transform = ""; });
+      m.addEventListener("pointerleave", () => { m.style.transform = ""; });
     });
-  }
-
-  /* ---------------------------------------------------------
-     3D tilt + spotlight on cards
-     --------------------------------------------------------- */
-  if (finePointer && !reduceMotion) {
-    $$(".tilt").forEach((el) => {
-      let raf = null;
-      el.addEventListener("pointermove", (e) => {
-        const b = el.getBoundingClientRect();
-        const px = (e.clientX - b.left) / b.width;
-        const py = (e.clientY - b.top) / b.height;
-        if (raf) cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(() => {
-          el.style.transition = "transform .15s ease-out, border-color .4s";
-          el.style.transform = `rotateX(${(0.5 - py) * 10}deg) rotateY(${(px - 0.5) * 12}deg) translateZ(0)`;
-          el.style.setProperty("--mx", px * 100 + "%");
-          el.style.setProperty("--my", py * 100 + "%");
-        });
+    $$(".tilt").forEach((c) => {
+      c.addEventListener("pointermove", (e) => {
+        const b = c.getBoundingClientRect();
+        const px = (e.clientX - b.left) / b.width, py = (e.clientY - b.top) / b.height;
+        c.style.transition = "transform .15s ease-out, border-color .4s";
+        c.style.transform = `rotateX(${(0.5 - py) * 9}deg) rotateY(${(px - 0.5) * 11}deg)`;
+        c.style.setProperty("--mx", px * 100 + "%");
+        c.style.setProperty("--my", py * 100 + "%");
       });
-      el.addEventListener("pointerleave", () => {
-        el.style.transition = "transform .9s cubic-bezier(.22,1,.36,1), border-color .4s";
-        el.style.transform = "";
+      c.addEventListener("pointerleave", () => {
+        c.style.transition = "transform .9s cubic-bezier(.22,1,.36,1), border-color .4s";
+        c.style.transform = "";
       });
     });
   }
@@ -527,26 +725,21 @@
      ROI calculator
      --------------------------------------------------------- */
   const inTeam = $("#inTeam"), inHours = $("#inHours"), inRate = $("#inRate");
-  const resMoney = $("#resMoney"), resHours = $("#resHours"), resFte = $("#resFte");
-  const fmt = new Intl.NumberFormat("en-US");
   const shown = { money: 0, hours: 0, fte: 0 };
   function calc() {
-    [inTeam, inHours, inRate].forEach((i) => {
-      i.style.setProperty("--fill", ((i.value - i.min) / (i.max - i.min)) * 100 + "%");
-    });
+    [inTeam, inHours, inRate].forEach((i) => i.style.setProperty("--fill", ((i.value - i.min) / (i.max - i.min)) * 100 + "%"));
     $("#outTeam").textContent = inTeam.value;
     $("#outHours").textContent = inHours.value;
     $("#outRate").textContent = inRate.value;
     const hours = inTeam.value * inHours.value * 48 * 0.7;
-    const money = hours * inRate.value;
-    const fte = hours / 1760;
+    const target = { money: hours * inRate.value, hours, fte: hours / 1760 };
     const apply = () => {
-      resMoney.textContent = "$" + fmt.format(Math.round(shown.money));
-      resHours.textContent = fmt.format(Math.round(shown.hours));
-      resFte.textContent = shown.fte.toFixed(1);
+      $("#resMoney").textContent = money(shown.money);
+      $("#resHours").textContent = fmt.format(Math.round(shown.hours));
+      $("#resFte").textContent = shown.fte.toFixed(1);
     };
-    if (hasGSAP && !reduceMotion) gsap.to(shown, { money, hours, fte, duration: 0.8, ease: "expo.out", overwrite: true, onUpdate: apply });
-    else { Object.assign(shown, { money, hours, fte }); apply(); }
+    if (hasGSAP && !reduceMotion) gsap.to(shown, { ...target, duration: 0.8, ease: "expo.out", overwrite: true, onUpdate: apply });
+    else { Object.assign(shown, target); apply(); }
   }
   [inTeam, inHours, inRate].forEach((i) => i.addEventListener("input", calc));
   calc();
@@ -556,56 +749,51 @@
      --------------------------------------------------------- */
   const toggleBtns = $$(".toggle__btn");
   const pill = $(".toggle__pill");
-  function placePill(btn) {
-    pill.style.width = btn.offsetWidth + "px";
-    pill.style.transform = `translateX(${btn.offsetLeft - 5}px)`;
-  }
+  const placePill = (b) => { pill.style.width = b.offsetWidth + "px"; pill.style.transform = `translateX(${b.offsetLeft - 5}px)`; };
   toggleBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       toggleBtns.forEach((b) => b.classList.toggle("is-active", b === btn));
       placePill(btn);
       const mode = btn.dataset.billing;
-      $$(".plan__price [data-" + mode + "]").forEach((el) => {
-        const next = el.dataset[mode];
-        if (!hasGSAP || reduceMotion) { el.textContent = next; return; }
-        gsap.to(el, { y: -14, opacity: 0, duration: 0.2, ease: "power2.in", onComplete: () => {
-          el.textContent = next;
-          gsap.fromTo(el, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "expo.out" });
-        }});
+      $$(".plan__price [data-" + mode + "]").forEach((p) => {
+        const next = p.dataset[mode];
+        if (!hasGSAP || reduceMotion) { p.textContent = next; return; }
+        gsap.to(p, { y: -14, opacity: 0, duration: 0.2, ease: "power2.in", onComplete: () => {
+          p.textContent = next;
+          gsap.fromTo(p, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "expo.out" });
+        } });
       });
     });
   });
   const placeActive = () => placePill($(".toggle__btn.is-active"));
   placeActive();
   window.addEventListener("resize", placeActive);
-  document.fonts && document.fonts.ready.then(placeActive);
+  if (document.fonts) document.fonts.ready.then(placeActive);
 
   /* ---------------------------------------------------------
-     FAQ: smooth accordion (one open at a time)
+     FAQ accordion
      --------------------------------------------------------- */
-  $$(".faq__item").forEach((item) => {
-    const summary = $("summary", item);
+  const refreshST = () => hasGSAP && ScrollTrigger.refresh();
+  function closeItem(item) {
     const body = $(".faq__body", item);
-    summary.addEventListener("click", (e) => {
+    gsap.to(body, { height: 0, opacity: 0, duration: 0.45, ease: "power3.inOut", onComplete: () => { item.open = false; body.style.height = ""; body.style.opacity = ""; refreshST(); } });
+  }
+  $$(".faq__item").forEach((item) => {
+    const body = $(".faq__body", item);
+    $("summary", item).addEventListener("click", (e) => {
       if (!hasGSAP || reduceMotion) return;
       e.preventDefault();
-      const opening = !item.open;
-      if (opening) {
-        $$(".faq__item[open]").forEach((other) => { if (other !== item) closeItem(other); });
+      if (!item.open) {
+        $$(".faq__item[open]").forEach((o) => o !== item && closeItem(o));
         item.open = true;
         gsap.fromTo(body, { height: 0, opacity: 0 }, { height: "auto", opacity: 1, duration: 0.6, ease: "expo.out", onComplete: refreshST });
       } else closeItem(item);
     });
   });
-  function closeItem(item) {
-    const body = $(".faq__body", item);
-    gsap.to(body, { height: 0, opacity: 0, duration: 0.45, ease: "power3.inOut", onComplete: () => { item.open = false; body.style.height = ""; body.style.opacity = ""; refreshST(); } });
-  }
-  function refreshST() { if (hasGSAP) ScrollTrigger.refresh(); }
 
   /* ---------------------------------------------------------
-     Contact form (front-end validation; wire up a backend
-     by setting FORM_ENDPOINT, e.g. a Formspree URL)
+     Contact form — set FORM_ENDPOINT (e.g. a Formspree URL)
+     to receive submissions.
      --------------------------------------------------------- */
   const FORM_ENDPOINT = ""; // e.g. "https://formspree.io/f/xxxxxxx"
   const form = $("#contactForm");
@@ -640,7 +828,7 @@
       status.textContent = "Thanks! We'll be in touch within one business day.";
       status.classList.add("is-ok");
     } catch (err) {
-      status.textContent = "Something went wrong — please email us directly.";
+      status.textContent = "Something went wrong. Please email us directly.";
       status.classList.add("is-err");
     } finally {
       btn.disabled = false;

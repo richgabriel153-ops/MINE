@@ -4,66 +4,89 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aether — AI Automation Agency</title>
-  <meta name="description" content="Aether designs and deploys AI agents and automations that take repetitive work off your team's plate — so you can scale without scaling headcount." />
-  <meta name="theme-color" content="#07060f" />
+  <meta name="description" content="Aether designs and deploys AI agents, voice assistants and workflow automations that take repetitive work off your team's plate." />
+  <meta name="theme-color" content="#e06b12" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!-- Preloader -->
   <div class="loader" id="loader" aria-hidden="true">
-    <div class="loader__orb"></div>
-    <div class="loader__count"><span id="loaderCount">0</span>%</div>
+    <div class="loader__mark">AE</div>
+    <div class="loader__bar"><span id="loaderBar"></span></div>
   </div>
-
-  <!-- 3D background canvas -->
-  <canvas id="webgl" aria-hidden="true"></canvas>
-  <div class="grain" aria-hidden="true"></div>
-
-  <!-- Custom cursor -->
-  <div class="cursor" aria-hidden="true"><div class="cursor__dot"></div><div class="cursor__ring"><span class="cursor__label"></span></div></div>
 
   <!-- Navigation -->
   <header class="nav" id="nav">
-    <a href="#top" class="nav__logo" data-magnetic>
-      <span class="logo-mark"></span>Aether
-    </a>
-    <nav class="nav__links" aria-label="Primary">
+    <a href="#top" class="nav__logo"><span class="nav__mono">AE</span>AETHER</a>
+    <nav class="nav__pill" aria-label="Primary">
+      <a href="#top" class="is-active" id="navActive">AI Agents</a>
       <a href="#services">Services</a>
-      <a href="#process">Process</a>
-      <a href="#roi">ROI</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
+      <a href="#contact">Contact</a>
     </nav>
-    <a href="#contact" class="btn btn--glass nav__cta" data-magnetic>Book a call</a>
-    <button class="nav__burger" id="burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    <div class="nav__icons">
+      <a href="#roi" class="icon-btn" aria-label="ROI calculator"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></a>
+      <a href="#contact" class="icon-btn" aria-label="Book a call"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+      <button class="nav__burger" id="burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
   </header>
   <div class="mobile-menu" id="mobileMenu">
     <a href="#services">Services</a><a href="#process">Process</a><a href="#roi">ROI</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="#contact">Book a call</a>
   </div>
 
   <main id="top">
-    <!-- HERO -->
-    <section class="hero" id="hero">
-      <div class="hero__inner">
-        <div class="pill reveal"><span class="pill__dot"></span>Now onboarding Q4 clients — 3 spots left</div>
-        <h1 class="hero__title">
-          <span class="line"><span class="word">Automate</span> <span class="word">the</span> <span class="word">work.</span></span>
-          <span class="line"><span class="word gradient-text">Amplify</span> <span class="word gradient-text">the</span> <span class="word gradient-text">people.</span></span>
-        </h1>
-        <p class="hero__sub reveal">We design, build and run custom AI agents and workflow automations that take busywork off your team — lead handling, support, ops, reporting — live in weeks, not quarters.</p>
-        <div class="hero__ctas reveal">
-          <a href="#contact" class="btn btn--primary" data-magnetic data-cursor="Let's talk">Get your free automation audit <span class="btn__arrow">→</span></a>
-          <a href="#process" class="btn btn--ghost" data-magnetic>See how it works</a>
+    <!-- HERO: service showcase carousel -->
+    <section class="hero" id="hero" aria-roledescription="carousel" aria-label="Our AI services">
+      <canvas id="stage3d" aria-hidden="true"></canvas>
+      <div class="hero__glow" aria-hidden="true"></div>
+
+      <div class="hero__grid">
+        <div class="hero__left">
+          <div class="hero__controls">
+            <button class="arrow" id="prevBtn" aria-label="Previous service"><svg viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg></button>
+            <button class="arrow" id="nextBtn" aria-label="Next service"><svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+            <span class="hero__count"><span id="slideNum">01</span> / <span id="slideTotal">04</span></span>
+          </div>
+          <div class="hero__copy" aria-live="polite">
+            <span class="hero__kicker" id="slideKicker">AI Agents &amp; Chatbots</span>
+            <h1 class="hero__title">
+              <span class="line"><span class="line__in" id="titleA">Answers that</span></span>
+              <span class="line"><span class="line__in" id="titleB">never sleep</span></span>
+            </h1>
+            <p class="hero__text" id="slideText">It's not just about replying faster. It's about every customer feeling heard, instantly. Our AI agents learn your business, qualify leads and book meetings, 24/7, in your brand voice.</p>
+          </div>
+          <div class="hero__ctas">
+            <a href="#contact" class="btn btn--white" data-magnetic>Get the look<span class="btn__chev">›</span></a>
+            <a href="#services" class="btn btn--glass" data-magnetic>All services</a>
+          </div>
         </div>
-        <div class="hero__meta reveal">
-          <div class="avatars"><span style="--h:260"></span><span style="--h:200"></span><span style="--h:320"></span><span style="--h:180"></span></div>
-          <p><strong>120+ businesses</strong> automated · avg. <strong>32 hrs/week</strong> saved per team</p>
+
+        <div class="hero__stage" id="stageAnchor" aria-hidden="true"></div>
+
+        <div class="hero__right">
+          <div class="price">
+            <span class="price__label">Starting from</span>
+            <span class="price__now" id="priceNow">$1,900</span>
+            <span class="price__old" id="priceOld">$2,500</span>
+          </div>
+          <div class="sizes">
+            <span class="sizes__label">Automations included:</span>
+            <div class="sizes__row" role="radiogroup" aria-label="Automations included">
+              <button class="size is-active" role="radio" aria-checked="true" data-size="0">1</button>
+              <button class="size" role="radio" aria-checked="false" data-size="1">3</button>
+              <button class="size" role="radio" aria-checked="false" data-size="2">5</button>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="scroll-hint" aria-hidden="true"><span></span>Scroll</div>
+
+      <p class="hero__tagline">Your business,<br />on autopilot.</p>
+      <button class="hero__next" id="nextThumb" aria-label="Show next service"><span id="nextName">Workflow</span></button>
+      <div class="hero__progress" aria-hidden="true"><span id="heroProgress"></span></div>
     </section>
 
     <!-- MARQUEE -->
@@ -88,31 +111,31 @@
     <section class="services" id="services">
       <div class="section-head">
         <span class="eyebrow reveal">01 — Services</span>
-        <h2 class="reveal">Intelligent systems,<br /><span class="gradient-text">built around your business.</span></h2>
+        <h2 class="reveal">Intelligent systems,<br /><span class="accent">built around your business.</span></h2>
       </div>
       <div class="cards">
-        <article class="card tilt" data-cursor="Explore">
+        <article class="card tilt" data-goto="0" tabindex="0">
           <div class="card__glow"></div>
           <div class="card__icon"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V7a4 4 0 0 1 4-4Z"/><circle cx="10" cy="10" r="1"/><circle cx="14" cy="10" r="1"/></svg></div>
           <h3>AI Agents &amp; Chatbots</h3>
           <p>24/7 assistants trained on your docs and data that answer customers, qualify leads and book meetings — in your brand voice.</p>
           <ul><li>Website &amp; WhatsApp agents</li><li>Voice receptionists</li><li>Internal knowledge copilots</li></ul>
         </article>
-        <article class="card tilt" data-cursor="Explore">
+        <article class="card tilt" data-goto="1" tabindex="0">
           <div class="card__glow"></div>
           <div class="card__icon"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 6h9M6.3 8.2l4.4 7.6M17.7 8.2l-4.4 7.6"/></svg></div>
           <h3>Workflow Automation</h3>
           <p>End-to-end pipelines that connect your CRM, inbox, docs and finance tools so data moves itself — no more manual hand-offs.</p>
           <ul><li>Lead routing &amp; enrichment</li><li>Invoice &amp; document processing</li><li>Onboarding sequences</li></ul>
         </article>
-        <article class="card tilt" data-cursor="Explore">
+        <article class="card tilt" data-goto="3" tabindex="0">
           <div class="card__glow"></div>
           <div class="card__icon"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
           <h3>AI Insights &amp; Reporting</h3>
           <p>Dashboards and daily briefs that read your numbers for you, flag what changed, and tell you what to do next.</p>
           <ul><li>Automated weekly reports</li><li>Anomaly alerts</li><li>Natural-language analytics</li></ul>
         </article>
-        <article class="card tilt" data-cursor="Explore">
+        <article class="card tilt">
           <div class="card__glow"></div>
           <div class="card__icon"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 3.8 9.3 9 10 5.2-.7 9-5 9-10V6l-9-4Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg></div>
           <h3>Strategy &amp; Managed Ops</h3>
@@ -127,7 +150,7 @@
       <div class="process__pin">
         <div class="process__head">
           <span class="eyebrow">02 — Process</span>
-          <h2>From chaos to<br /><span class="gradient-text">autopilot in 4 steps.</span></h2>
+          <h2>From chaos to<br /><span class="accent">autopilot in 4 steps.</span></h2>
           <div class="process__progress"><span id="processBar"></span></div>
         </div>
         <div class="process__track" id="processTrack">
@@ -151,7 +174,7 @@
     <section class="roi" id="roi">
       <div class="section-head">
         <span class="eyebrow reveal">03 — ROI Calculator</span>
-        <h2 class="reveal">See what automation<br /><span class="gradient-text">is worth to you.</span></h2>
+        <h2 class="reveal">See what automation<br /><span class="accent">is worth to you.</span></h2>
       </div>
       <div class="roi__panel glass reveal">
         <div class="roi__inputs">
@@ -172,7 +195,7 @@
         <div class="roi__results">
           <div class="roi__big">
             <span class="roi__label">Estimated yearly savings</span>
-            <span class="roi__value gradient-text" id="resMoney">$0</span>
+            <span class="roi__value accent" id="resMoney">$0</span>
           </div>
           <div class="roi__row">
             <div><span class="roi__label">Hours freed / year</span><span class="roi__small" id="resHours">0</span></div>
@@ -187,7 +210,7 @@
     <section class="testimonials">
       <div class="section-head">
         <span class="eyebrow reveal">04 — Results</span>
-        <h2 class="reveal">Teams that stopped<br /><span class="gradient-text">doing robot work.</span></h2>
+        <h2 class="reveal">Teams that stopped<br /><span class="accent">doing robot work.</span></h2>
       </div>
       <div class="quotes" id="quotes">
         <figure class="quote glass tilt">
@@ -209,7 +232,7 @@
     <section class="pricing" id="pricing">
       <div class="section-head">
         <span class="eyebrow reveal">05 — Pricing</span>
-        <h2 class="reveal">Simple plans.<br /><span class="gradient-text">Serious returns.</span></h2>
+        <h2 class="reveal">Simple plans.<br /><span class="accent">Serious returns.</span></h2>
         <div class="toggle reveal" role="group" aria-label="Billing">
           <button class="toggle__btn is-active" data-billing="project">One-off project</button>
           <button class="toggle__btn" data-billing="retainer">Monthly retainer</button>
@@ -246,7 +269,7 @@
     <section class="faq" id="faq">
       <div class="section-head">
         <span class="eyebrow reveal">06 — FAQ</span>
-        <h2 class="reveal">Questions,<br /><span class="gradient-text">answered.</span></h2>
+        <h2 class="reveal">Questions,<br /><span class="accent">answered.</span></h2>
       </div>
       <div class="faq__list">
         <details class="faq__item reveal"><summary>Do I need technical knowledge to work with you?<span class="faq__icon"></span></summary><div class="faq__body"><p>Not at all. You know your business; we handle everything technical. You'll get plain-English updates and a simple dashboard to see what your automations are doing.</p></div></details>
@@ -263,7 +286,7 @@
       <div class="contact__grid">
         <div class="contact__copy">
           <span class="eyebrow reveal">07 — Let's build</span>
-          <h2 class="contact__title reveal">Ready to put your<br /><span class="gradient-text">business on autopilot?</span></h2>
+          <h2 class="contact__title reveal">Ready to put your<br /><span class="accent">business on autopilot?</span></h2>
           <p class="reveal">Book a free 30-minute automation audit. We'll find your three biggest time-wasters and show you exactly how to automate them — no strings attached.</p>
           <ul class="contact__points reveal"><li>Free process audit</li><li>ROI estimate in 48 hours</li><li>No long-term contracts</li></ul>
         </div>
