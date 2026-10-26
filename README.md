@@ -1,102 +1,97 @@
 # Flowlite
 
-A tiny, zero-dependency workflow automation app in the spirit of n8n, built to be used from an iPhone.
+A small, self-hosted workflow automation app with an **n8n-style editor** that works on an iPhone.
+It uses n8n's workflow JSON format, so you can paste workflows (or individual nodes) copied from n8n.
+It has no dependencies: just Node.js.
 
-It runs on a small server (so workflows keep running when your phone is locked) and you use it
-through a mobile web app that you add to your home screen.
+## What's included
 
-## What it does
+**Editor**: built to look and work like n8n's.
+- Dotted canvas with nodes, connections and item counts. You can pan, pinch/scroll to zoom, drag nodes,
+  and drag from an output to connect nodes.
+- Use the **+** button on an output, the **+** in the corner, or Tab to open the node panel
+  ("What happens next?") with categories and search.
+- Node details view with **Input | Parameters | Output** panels: Schema / Table / JSON views, and
+  *Fixed / Expression* toggles with a live **Result** preview. Drag fields from Input into a parameter
+  to map them; on a phone, tap a parameter, then tap the field.
+- **Test workflow**, **Test step** (runs up to that node), **Listen for test event** for webhooks,
+  per-node Settings (Always Output Data, Execute Once, On Error, Notes) and deactivating nodes.
+- Overview page with Workflows, Credentials and Executions; an Executions tab with read-only replays
+  and *Debug in editor*; import, copy and paste of n8n JSON; Active toggle; Ctrl/⌘+S to save and
+  Ctrl/⌘+Enter to run.
 
-A **workflow** is a trigger followed by a list of steps.
+**Built-in nodes** (n8n type names and parameters):
 
-**Triggers**
-- **Manual** – tap ▶ Run in the app.
-- **Webhook** – each workflow gets its own secret URL. Call it from anything (Shortcuts, IFTTT, another
-  service). The last step's output is returned as the response.
-- **Schedule** – every N minutes, or every day at a set time.
-
-**Steps**
-- **HTTP Request** – call any API (GET/POST/PUT/PATCH/DELETE, headers, body).
-- **Set data** – build a JSON object from earlier data.
-- **Code** – run JavaScript and return a value (`fetch` is available).
-- **Filter / If** – stop unless a condition is true.
-- **Wait** – pause up to 300 seconds.
-
-**Expressions.** Any text field can contain `{{ … }}` JavaScript expressions:
-
-| Name | Meaning |
+| Group | Nodes |
 | --- | --- |
-| `json` | Output of the previous step |
-| `steps["Step name"]` | Output of any earlier step, by name |
-| `trigger` | Trigger data (for webhooks: `method`, `query`, `headers`, `body`) |
-| `now` | Current time as an ISO string |
+| Triggers | Manual Trigger, Schedule Trigger (minutes/hours/days/weeks/months/cron), Webhook |
+| Core | HTTP Request (query, headers, JSON/form/raw body, Basic/Bearer/Header/Query auth), Code (JavaScript), Respond to Webhook, RSS Read |
+| Flow | If, Filter, Switch, Merge (append/combine/choose branch), Wait, No Operation |
+| Data transformation | Edit Fields (Set), Split Out, Aggregate, Limit, Sort, Remove Duplicates, Date & Time, Crypto |
+| Apps | Telegram, Slack, Discord |
+| AI | OpenAI (chat), Anthropic (Claude) |
 
-Example: URL `https://api.example.com/users/{{ trigger.body.id }}`, condition `json.body.price < 100`.
+**Expressions**: `{{ }}` with `$json`, `$input.all()/first()/item`, `$('Node Name').item.json`,
+`$node["Name"].json`, `$now` / `$today` (Luxon-style `toFormat`, `plus`, `minus`…), `$workflow`,
+`$execution`, `$itemIndex`, `$if`, `$ifEmpty`.
 
-Every run is saved (last 200) with each step's output, so you can see what happened from your phone.
+**Not included**: n8n's hundreds of other app integrations (use HTTP Request or Code instead), Loop
+Over Items, sub-workflows, binary files, OAuth credentials, and user accounts or sharing.
+Unsupported nodes in imported workflows are shown with a dashed border and report an error when run.
 
-## Run it locally
-
-Needs Node.js 18 or newer. There is nothing to install.
+## Run it
 
 ```sh
-APP_PASSWORD=choose-a-password npm start
-# open http://localhost:3000
+APP_PASSWORD=choose-a-password npm start   # http://localhost:3000
 npm test
+npm run build:preview                      # single-file, in-browser demo → dist/flowlite-preview.html
 ```
+
+The in-browser preview runs everything locally and saves to the browser's storage. It can't receive
+webhooks or call outside APIs.
 
 ## Deploy (so your iPhone can reach it 24/7)
 
-Any host that can run a Docker container with a persistent disk works. The image stores everything
-in `/data`.
+Any host that runs a Docker container with a persistent disk works. Data lives in `/data`.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `APP_PASSWORD` | yes | Password for the app. The server won't start in production without it. |
-| `TZ` | no | Time zone for daily schedules, e.g. `America/New_York`. Defaults to UTC. |
-| `APP_SECRET` | no | Signs login cookies. Defaults to a value derived from the password. |
+| `TZ` | no | Time zone for schedules, e.g. `America/New_York` (default UTC). |
+| `ENCRYPTION_KEY` | no | Key for encrypting credentials. By default it is derived from `APP_SECRET` or the password. If you change it, saved credentials must be re-entered. |
+| `WEBHOOK_URL` | no | Public base URL shown for webhooks, if the automatic one is wrong behind a proxy. |
 | `PORT` | no | Defaults to `3000`. |
 
-**Railway (easiest)**
-1. Create a new project → *Deploy from GitHub repo* → pick this repo. Railway finds the `Dockerfile`.
-2. Under *Variables*, add `APP_PASSWORD` (and `TZ`).
-3. Add a *Volume* mounted at `/data` so your workflows survive redeploys.
-4. Under *Settings → Networking*, click *Generate Domain*.
+**Railway**: New project → *Deploy from GitHub repo* → set `APP_PASSWORD` (and `TZ`) → add a *Volume*
+mounted at `/data` → *Settings → Networking → Generate Domain*.
 
-**Any VPS (Hetzner, DigitalOcean, …)**
+**Any VPS**:
 ```sh
 docker build -t flowlite .
 docker run -d --restart unless-stopped -p 3000:3000 \
-  -e APP_PASSWORD=choose-a-password -e TZ=America/New_York \
-  -v flowlite-data:/data flowlite
+  -e APP_PASSWORD=choose-a-password -e TZ=America/New_York -v flowlite-data:/data flowlite
 ```
-Put it behind HTTPS (for example Caddy: `caddy reverse-proxy --from your.domain --to :3000`).
+Put it behind HTTPS, for example with Caddy: `caddy reverse-proxy --from your.domain --to :3000`.
 
-> Hosts with no persistent disk (such as Render's free tier) will wipe your workflows on every
-> redeploy, and free instances that go to sleep won't run schedules.
-
-## Put it on your iPhone
-
-1. Open your deployed URL in **Safari** and sign in.
-2. Tap **Share → Add to Home Screen**.
-3. It now opens full screen like a normal app.
-
-Tip: the **Shortcuts** app can call a webhook URL ("Get Contents of URL"), so you can start workflows
-from Siri, an automation, or a home-screen button.
+Then open the URL in **Safari → Share → Add to Home Screen**.
 
 ## Security notes
 
-- Everything except webhooks and the login page requires the password.
-- Webhook URLs contain a random 24-character ID. Treat them like passwords.
-- Code steps and expressions run with full server access (`node:vm` is not a sandbox). That is fine
-  for a single owner, but don't share your password with people you don't trust.
+- Everything except webhooks and the sign-in page requires the password.
+- Credentials are encrypted at rest (AES-256-GCM) and never sent back to the browser in full.
+- Expressions and Code nodes run on the server with a timeout. They are not sandboxed, so anyone with
+  the password can run code on the server. Only share it with people you trust.
 
 ## Project layout
 
 ```
-server.js   HTTP server, REST API, webhooks, scheduler
-engine.js   Runs workflows: expressions and step types
-store.js    JSON-file storage in DATA_DIR
-public/     Mobile web app (no build step)
-test/       node --test suites
+server.js            HTTP server: REST API, webhooks (/webhook, /webhook-test), scheduler
+store.js             JSON-file storage in DATA_DIR
+public/engine.js     Workflow engine + node definitions (shared by server and browser)
+public/app.js        Overview, editor, executions, node panel, credentials
+public/canvas.js     Canvas and graph editing
+public/ndv.js        Node details view and parameter editors
+public/backend.js    Server API client, and the in-browser backend used by the preview
+scripts/build-preview.js
+test/                node --test suites
 ```

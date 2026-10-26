@@ -1,11 +1,12 @@
 {
   "name": "flowlite",
   "version": "0.1.0",
-  "description": "A tiny, zero-dependency workflow automation app (n8n-style) built to be used from a phone.",
+  "description": "A small, zero-dependency workflow automation app with an n8n-style editor, built to be used from a phone.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "build:preview": "node scripts/build-preview.js"
   },
   "engines": {
     "node": ">=18"
