@@ -160,3 +160,36 @@ The pages are written in plain English to match how the app works, but they are 
    has rows with `processed_at` set.
 
 Then switch to live keys/plans, update the webhook URL, redeploy, and reply **"approved for production"**.
+
+## Backups
+
+The free Supabase plan has no automatic backups, so `.github/workflows/db-backup.yml` copies the database every night
+(02:17 Lagos time) and keeps each copy for 30 days, encrypted, under the repository's **Actions** tab.
+
+**Set up once** (GitHub → this repository → **Settings → Secrets and variables → Actions → New repository secret**):
+
+1. `SUPABASE_DB_URL`: in Supabase, open the project → **Connect** → **Session pooler**, copy the connection string and
+   replace `[YOUR-PASSWORD]` with the database password (forgot it? **Database → Settings → Reset database password**).
+2. `BACKUP_PASSPHRASE`: a long password you make up. Store it somewhere safe (a password manager); without it a
+   backup can't be opened.
+
+Then **Actions → Nightly database backup → Run workflow** to make the first copy and check it goes green.
+
+**What's in a copy:** all tables (businesses, customers, receipts, invoices, payments, expenses, staff), login accounts,
+access rules and database functions. Expense photos are files, not database rows, so they are not included.
+
+**To restore** (only if something has gone badly wrong; ask for help first):
+
+1. Actions → pick a night's run → download the file, then unlock it:
+   `gpg -d inceipt-db-YYYY-MM-DD.tar.gz.gpg | tar -xz`
+2. Create a new, empty Supabase project, and use its Session pooler connection string as `NEW_DB_URL`.
+3. Run:
+   ```
+   psql --single-transaction --variable ON_ERROR_STOP=1 \
+     --file backup/roles.sql --file backup/schema.sql \
+     --command 'SET session_replication_role = replica' \
+     --file backup/auth-data.sql --file backup/data.sql \
+     --dbname "$NEW_DB_URL"
+   ```
+4. Point the app at the new project (the three Supabase values in Vercel) and redeploy.
+
