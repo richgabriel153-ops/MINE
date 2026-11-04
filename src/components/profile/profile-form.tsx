@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NIGERIAN_BANKS } from "@/lib/banks";
 import { saveProfile } from "@/lib/db";
-import { cleanInstagram, validateProfile, type ProfileErrors } from "@/lib/profile";
+import { cleanInstagram, cleanTin, validateProfile, type ProfileErrors } from "@/lib/profile";
 import type { BusinessProfile } from "@/lib/types";
 
 /** Only allow going back to our own pages after saving. */
@@ -45,6 +45,7 @@ export function ProfileForm({ initial }: { initial: BusinessProfile }) {
       bankName: profile.bankName.trim(),
       accountName: profile.accountName.trim(),
       instagram: cleanInstagram(profile.instagram),
+      tin: cleanTin(profile.tin ?? ""),
     };
     const found = validateProfile(cleaned);
     if (badPhones.phone) found.phone = "Enter a Nigerian mobile number, e.g. 0803 123 4567.";
@@ -163,6 +164,18 @@ export function ProfileForm({ initial }: { initial: BusinessProfile }) {
                 placeholder="yourshop"
               />
             </div>
+          </Field>
+          <Field id="profile-tin" label="Tax ID (TIN)" optional hint="Printed on your documents. Needed on invoices that charge VAT." error={errors.tin}>
+            <Input
+              id="profile-tin"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={20}
+              value={profile.tin ?? ""}
+              onChange={(e) => set("tin", e.target.value)}
+              placeholder="12345678-0001"
+              aria-invalid={!!errors.tin || undefined}
+            />
           </Field>
         </CardContent>
       </Card>

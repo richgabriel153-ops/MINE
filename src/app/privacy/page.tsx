@@ -17,24 +17,20 @@ export default function PrivacyPage() {
 
       <h2>1. The short version</h2>
       <ul>
-        <li>Without an account, your records are saved only on your phone. We never receive them.</li>
-        <li>With an account, your records are stored securely online so you can use them on other phones and with staff.</li>
-        <li>We never see card details. Payments are handled by Paystack.</li>
+        <li>You need an account to use InCeipt. Your records are stored securely online so they are safe if you lose your phone, and you can use them on other phones and with staff.</li>
+        <li>We collect only what the app needs: your login email, your business details and the records you make.</li>
+        <li>You can download all your data or delete your account yourself, any time, in More → Your data.</li>
+        <li>We never see card details. During the beta no payments are taken at all.</li>
         <li>We don&apos;t sell your information, and we don&apos;t use your records for advertising.</li>
       </ul>
 
       <h2>2. Information we collect</h2>
-      <h3>a) Using InCeipt without an account</h3>
-      <p>
-        Your business details, receipts, invoices, quotes, expenses and settings are stored in your phone&apos;s browser
-        storage. They are not sent to us. If you clear your browser data or lose your phone, they can&apos;t be recovered unless
-        you saved a backup. Your tax settings on the Tax page are also kept on your phone.
-      </p>
-      <h3>b) With an InCeipt account</h3>
+      <h3>a) Your account and records</h3>
       <ul>
         <li>
-          <strong>Account details:</strong> your email address and the name you give us. We sign you in with a one-time code
-          sent to your email; we don&apos;t store passwords.
+          <strong>Account details:</strong> your email address, your name and your password. Passwords are stored scrambled
+          (hashed) by our sign-in provider; nobody at InCeipt can see them. We email you one-time codes to confirm your email,
+          reset your password or log in without a password.
         </li>
         <li>
           <strong>Business details:</strong> business name, logo, phone and WhatsApp numbers, address, email, Instagram handle,
@@ -45,14 +41,18 @@ export default function PrivacyPage() {
           of a receipt you attach) and expense categories.
         </li>
         <li>
-          <strong>Your customers&apos; details:</strong> the names and phone numbers you enter on documents. See section 4.
+          <strong>Your customers&apos; details:</strong> the names and phone numbers you enter on documents. InCeipt keeps a
+          customer list from them so you can find past records and see who owes you. See section 4.
         </li>
         <li>
           <strong>Staff:</strong> the email addresses and names of people you invite, and an activity log of what each person
           did (for example &ldquo;created RCT-0012&rdquo;) so the owner can see it.
         </li>
+        <li>
+          <strong>Your agreement:</strong> the date and the version of these terms you accepted when you signed up.
+        </li>
       </ul>
-      <h3>c) Payments</h3>
+      <h3>b) Payments (not switched on during the beta)</h3>
       <ul>
         <li>
           <strong>InCeipt Pro subscriptions</strong> are paid through Paystack. We receive your Paystack customer and
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
           payment details go to Paystack, not to us.
         </li>
       </ul>
-      <h3>d) InCeipt Assistant (AI)</h3>
+      <h3>c) InCeipt Assistant (AI)</h3>
       <p>
         If you use the Assistant, the messages you type and the records it needs to answer you (for example a list of unpaid
         invoices) are sent to our AI provider, Anthropic, to produce a reply. We count how many messages each business sends
@@ -74,11 +74,18 @@ export default function PrivacyPage() {
         through its commercial service to train its models by default. Don&apos;t type information into the Assistant that
         isn&apos;t needed for the task.
       </p>
-      <h3>e) Technical information</h3>
+      <h3>d) Technical information</h3>
       <p>
         Like most websites, our hosting provider keeps basic logs (such as IP address, device and browser type, and time of
-        request) to keep the service secure and working. We use your IP address to apply limits on free previews. We don&apos;t
-        use advertising trackers.
+        request) to keep the service secure and working. We use your IP address to limit repeated attempts, for example many
+        wrong codes in a row. We don&apos;t use advertising or analytics trackers.
+      </p>
+      <h3>e) Cookies and storage on your phone</h3>
+      <p>
+        InCeipt does not use cookies for tracking or advertising, so there is no cookie banner. To work, the app saves a few
+        things in your phone&apos;s browser storage: your login session (so you stay logged in), your preferences (such as
+        your tax settings), and a read-only copy of your recent records so you can still look at them with no network. Logging
+        out removes the login session and the saved copy from that phone.
       </p>
 
       <h2>3. Why we use your information</h2>
@@ -106,8 +113,8 @@ export default function PrivacyPage() {
       <h2>5. Who we share information with</h2>
       <p>We only share information with service providers that help us run InCeipt, under contracts that protect it:</p>
       <ul>
-        <li><strong>Supabase</strong>: database, sign-in and file storage for accounts.</li>
-        <li><strong>Paystack</strong>: subscriptions, Pay Now payments and payouts to your bank.</li>
+        <li><strong>Supabase</strong>: database, sign-in and file storage for accounts (servers in Frankfurt, Germany).</li>
+        <li><strong>Paystack</strong>: subscriptions, Pay Now payments and payouts to your bank (only once payments are switched on).</li>
         <li><strong>Anthropic</strong>: the AI that powers the InCeipt Assistant (only when you use it).</li>
         <li><strong>Vercel</strong>: website hosting.</li>
         <li><strong>Our email provider</strong>: sending sign-in codes.</li>
@@ -129,9 +136,9 @@ export default function PrivacyPage() {
       <ul>
         <li>Account records are kept while your account is active.</li>
         <li>
-          If you ask us to delete your account, we delete your records within 30 days, except where we must keep some
-          information for legal, tax or accounting reasons (for example records of payments made to us), which we keep only for
-          as long as the law requires.
+          When you delete your account (More → Your data → Delete my account), your login and every business you own, with
+          its records and photos, are deleted straight away. If you ask us by email instead, we do it within 30 days. We keep
+          only what the law requires us to keep (for example records of payments made to us), and only for as long as required.
         </li>
         <li>Staff lose access as soon as the owner removes them; their past activity stays in the business&apos;s log.</li>
       </ul>
@@ -154,7 +161,8 @@ export default function PrivacyPage() {
         <li>withdraw consent where we rely on it.</li>
       </ul>
       <p>
-        To use these rights, <EmailUs />. We will reply within 30 days. You can also complain to the Nigeria Data Protection
+        You can download a copy of everything and delete your account yourself in More → Your data. For anything else,{" "}
+        <EmailUs />. We will reply within 30 days. You can also complain to the Nigeria Data Protection
         Commission (ndpc.gov.ng).
       </p>
 

@@ -10,7 +10,7 @@ export const LEGAL = {
   email: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "",
   phone: process.env.NEXT_PUBLIC_SUPPORT_PHONE || "",
   address: process.env.NEXT_PUBLIC_BUSINESS_ADDRESS || "",
-  effective: "1 October 2026",
+  effective: "4 November 2026",
 };
 
 export const LEGAL_PAGES = [

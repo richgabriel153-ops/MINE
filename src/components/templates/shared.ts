@@ -48,6 +48,7 @@ export function contactLines(p: BusinessProfile): string[] {
   const extra = [phoneLine, p.instagram && `IG @${p.instagram}`].filter(Boolean).join(" · ");
   if (extra) lines.push(extra);
   if (p.email) lines.push(p.email);
+  if (p.tin) lines.push(`TIN ${p.tin}`);
   return lines;
 }
 

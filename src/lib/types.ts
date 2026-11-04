@@ -81,6 +81,8 @@ export interface BusinessProfile {
   accountName: string;
   accountNumber: string;
   instagram: string;
+  /** Tax ID (TIN), optional. Printed on documents when filled in. */
+  tin?: string;
   brandColor: string;
 }
 

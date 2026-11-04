@@ -23,13 +23,26 @@ export default function TermsPage() {
 
       <h2>2. Your account</h2>
       <ul>
-        <li>You can use InCeipt without an account. Your records are then saved only on your phone, and you are responsible for keeping a backup.</li>
-        <li>If you create an account, you sign in with a code sent to your email. Keep access to your email secure; anyone who can read it can sign in.</li>
+        <li>You need an account to use InCeipt. You log in with your email and password, and we email you codes to confirm your email or reset your password.</li>
+        <li>Keep your password and your email secure. Anyone who can read your email can reset your password.</li>
         <li>The person who creates a business account is its owner. The owner is responsible for the staff they invite and what those staff do in InCeipt, and can remove them at any time.</li>
         <li>Tell us straight away if you think someone has used your account without permission.</li>
       </ul>
 
-      <h2>3. Acceptable use</h2>
+      <h2>3. The beta</h2>
+      <ul>
+        <li>
+          InCeipt is in a test (beta) period. It may have mistakes or stop working for a while, and features may change. Check
+          important documents before you send them, and download your data (More → Your data) if you need a copy.
+        </li>
+        <li>
+          During the beta, no payments are taken. Pro features can be unlocked for free with a beta code. Beta access may end;
+          we will tell you before it does, and your records stay yours.
+        </li>
+        <li>We may ask for your feedback. You don&apos;t have to give it, and we may use any ideas you share to improve InCeipt.</li>
+      </ul>
+
+      <h2>4. Acceptable use</h2>
       <p>You must not use InCeipt to:</p>
       <ul>
         <li>make false, misleading or forged receipts, invoices or quotations, or deceive anyone;</li>
@@ -40,7 +53,7 @@ export default function TermsPage() {
       </ul>
       <p>We may suspend or close accounts that break these rules, and report illegal activity to the authorities.</p>
 
-      <h2>4. Your content</h2>
+      <h2>5. Your content</h2>
       <p>
         Your business details, logo, records and customer information belong to you. You give us permission to store, process
         and display them only to provide the service to you. You are responsible for the information you enter and for
@@ -48,9 +61,13 @@ export default function TermsPage() {
         information.
       </p>
 
-      <h2>5. Calculations, tax estimates and the AI Assistant</h2>
+      <h2>6. Calculations, tax estimates and the AI Assistant</h2>
       <ul>
         <li>InCeipt works out totals, VAT, discounts and balances from what you enter. Check your documents before sending them.</li>
+        <li>
+          VAT (7.5%) is off unless you turn it on for a document. Only add VAT if your business is registered for VAT and
+          allowed to charge it. You are responsible for the business details, tax numbers and amounts shown on your documents.
+        </li>
         <li>
           The Tax page gives <strong>estimates</strong> based on our reading of the Nigeria Tax Act 2025 and the records in
           InCeipt. It is not professional tax, legal or accounting advice and does not include every rule, allowance or credit.
@@ -62,8 +79,9 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>6. InCeipt Pro</h2>
+      <h2>7. InCeipt Pro</h2>
       <ul>
+        <li>The rest of this section applies once paid plans start. During the beta nothing is charged (see section 3).</li>
         <li>
           InCeipt Pro costs {formatNaira(PLANS.monthly.kobo)} a month or {formatNaira(PLANS.yearly.kobo)} a year. Prices include
           any applicable taxes unless we say otherwise.
@@ -89,8 +107,9 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>7. Getting paid online (Pay Now links)</h2>
+      <h2>8. Getting paid online (Pay Now links)</h2>
       <ul>
+        <li>Pay Now links are not available during the beta.</li>
         <li>
           Pay Now links are provided with Paystack. To use them you must also accept Paystack&apos;s terms, and Paystack may ask
           you for information to verify your business.
@@ -106,21 +125,22 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>8. Availability and changes</h2>
+      <h2>9. Availability and changes</h2>
       <p>
         We work hard to keep InCeipt available, but we can&apos;t promise it will always be uninterrupted or error-free. We may
         improve, change or stop features. If we stop a paid feature you&apos;re using, we will give you reasonable notice and a
         fair refund for any paid period you can&apos;t use.
       </p>
 
-      <h2>9. Closing your account</h2>
+      <h2>10. Closing your account</h2>
       <p>
-        You can stop using InCeipt at any time and ask us to delete your account. We may suspend or close an account that
+        You can stop using InCeipt at any time and delete your account yourself in More → Your data. This deletes your
+        records for good, so download a copy first if you need one. We may suspend or close an account that
         breaks these terms, puts others at risk or is required to be closed by law. Where possible we will tell you first and
         give you a chance to save your records.
       </p>
 
-      <h2>10. Our responsibility to you</h2>
+      <h2>11. Our responsibility to you</h2>
       <p>
         InCeipt is provided &ldquo;as is&rdquo;. As far as the law allows, we are not responsible for indirect losses such as
         lost profits, lost sales or lost data, or for losses caused by information you entered, by your staff, or by services
@@ -133,14 +153,14 @@ export default function TermsPage() {
         these terms or the law.
       </p>
 
-      <h2>11. Law and disputes</h2>
+      <h2>12. Law and disputes</h2>
       <p>
         These terms are governed by the laws of the Federal Republic of Nigeria. If you have a complaint, please <EmailUs />{" "}
         first so we can try to fix it. If we can&apos;t resolve it within 30 days, either of us may take it to the courts of Lagos
         State, Nigeria.
       </p>
 
-      <h2>12. Changes to these terms</h2>
+      <h2>13. Changes to these terms</h2>
       <p>
         We may update these terms. If the changes are important, we will tell you in the app or by email at least 14 days
         before they take effect. If you keep using InCeipt after that, you accept the new terms.

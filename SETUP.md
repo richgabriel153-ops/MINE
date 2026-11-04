@@ -114,6 +114,27 @@ page, the customer payment page and More. Set the four `NEXT_PUBLIC_LEGAL_*` / `
 values above so your business name and contact details appear, then give Paystack these links during activation:
 `https://<your-domain>/terms`, `/privacy` and `/refunds`. Have a lawyer review them before launch.
 
+### Before taking real payments: what needs a Nigerian lawyer
+
+The pages are written in plain English to match how the app works, but they are not legal advice. Before turning
+`NEXT_PUBLIC_PAYMENTS_ENABLED` on, have a lawyer check:
+
+1. **Who the operator is.** Register the business with CAC (business name or limited company) and put that exact name,
+   address and support email in `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_BUSINESS_ADDRESS`, `NEXT_PUBLIC_SUPPORT_EMAIL`.
+   Paystack asks for this too.
+2. **NDPA duties.** Whether you must register with the NDPC as a data controller/processor (it depends on how many
+   people's data you handle), whether you need a Data Protection Officer, and whether a yearly data-protection audit
+   applies. Also a written data-processing agreement with each business (InCeipt processes their customers' details).
+3. **Data stored abroad.** Supabase stores data in Frankfurt (Germany); Vercel and Anthropic are US-based. Confirm the
+   NDPA transfer safeguards described in the Privacy Policy are enough.
+4. **Subscriptions.** Auto-renewal wording, cancellation and refunds under the Federal Competition and Consumer
+   Protection Act (FCCPA 2018), and how VAT applies to the Pro price.
+5. **Pay Now links.** Whether collecting payments for businesses through Paystack subaccounts needs anything beyond
+   Paystack's own licence (CBN rules), and the platform-fee wording.
+6. **Limits of responsibility.** The liability cap and the "estimates, not tax advice" wording on the Tax page.
+7. **Document rules.** Whether VAT invoices made in the app meet FIRS/NRS requirements (seller TIN — now an optional
+   field in Business details — date, VAT amount shown separately).
+
 ## 5. Admin dashboard and AI assistant
 
 - **Admin dashboard**: sign in to InCeipt with an email listed in `ADMIN_EMAILS`. More → **Admin dashboard**
