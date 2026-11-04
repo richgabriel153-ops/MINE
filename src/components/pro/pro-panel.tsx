@@ -41,7 +41,7 @@ import { PRO_BENEFITS, PRO_COMPARISON } from "@/lib/pro";
 import { SAMPLE_PROFILE, SAMPLE_RECEIPT } from "@/lib/sample";
 import { cn } from "@/lib/utils";
 
-const GOLD = BRAND.amber;
+const GOLD = BRAND.coral;
 
 const FAQ = [
   {
@@ -93,7 +93,7 @@ function ProBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tracking-wide text-[#33250a]",
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tracking-wide text-[#0e1d1c]",
         className,
       )}
       style={{ backgroundColor: GOLD }}
@@ -124,7 +124,7 @@ function PlanPicker({ value, onChange }: { value: Plan; onChange: (p: Plan) => v
           >
             {p === "yearly" && (
               <span
-                className="absolute -top-2.5 right-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[#33250a]"
+                className="absolute -top-2.5 right-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[#0e1d1c]"
                 style={{ backgroundColor: GOLD }}
               >
                 BEST DEAL
@@ -213,12 +213,7 @@ export function ProPanel() {
   return (
     <div className="flex flex-col gap-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-[#1c1e33] px-5 pt-6 pb-7 text-white shadow-lg">
-        <div className="pointer-events-none absolute -top-20 -right-20 size-56 rounded-full bg-primary/50 blur-3xl" />
-        <div
-          className="pointer-events-none absolute -bottom-24 -left-16 size-48 rounded-full blur-3xl"
-          style={{ backgroundColor: `${GOLD}33` }}
-        />
+      <section className="relative overflow-hidden rounded-3xl bg-[#0e1d1c] px-5 pt-6 pb-7 text-white">
         <div className="relative flex flex-col gap-4">
           <ProBadge className="self-start" />
           {access.isPro ? (
@@ -253,7 +248,7 @@ export function ProPanel() {
                   <Button
                     asChild
                     size="lg"
-                    className="h-14 w-full text-base font-bold text-[#33250a]"
+                    className="h-14 w-full text-base font-bold text-[#0e1d1c]"
                     style={{ backgroundColor: GOLD }}
                   >
                     <a href="#unlock">
@@ -267,7 +262,7 @@ export function ProPanel() {
                   {access.mode === "cloud" ? (
                     <Button
                       size="lg"
-                      className="h-14 w-full text-base font-bold text-[#33250a] hover:opacity-95"
+                      className="h-14 w-full text-base font-bold text-[#0e1d1c] hover:opacity-95"
                       style={{ backgroundColor: GOLD }}
                       disabled={busy !== null || !isCloudConfigured()}
                       onClick={() => run("checkout", plan)}
@@ -279,7 +274,7 @@ export function ProPanel() {
                     <Button
                       asChild
                       size="lg"
-                      className="h-14 w-full text-base font-bold text-[#33250a]"
+                      className="h-14 w-full text-base font-bold text-[#0e1d1c]"
                       style={{ backgroundColor: GOLD }}
                     >
                       <Link href="/account?next=%2Fpro">
@@ -314,7 +309,7 @@ export function ProPanel() {
 
       {/* Manage plan */}
       {subscribed && cloud && (
-        <section aria-labelledby="manage" className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-xs">
+        <section aria-labelledby="manage" className="flex flex-col gap-3 rounded-2xl border bg-card p-5">
           <h2 id="manage" className="font-bold">
             Manage your plan
           </h2>
@@ -368,7 +363,7 @@ export function ProPanel() {
           <div className="mt-4 grid grid-cols-2 gap-3">
             <figure className="flex flex-col gap-2">
               <div
-                className="pointer-events-none overflow-hidden rounded-xl border bg-card p-1.5 shadow-xs"
+                className="pointer-events-none overflow-hidden rounded-xl border bg-card p-1.5"
                 aria-hidden
               >
                 <ScaledPreview>
@@ -401,7 +396,7 @@ export function ProPanel() {
           {access.isPro ? "Included in your plan" : "What you get"}
         </h2>
         {PRO_BENEFITS.map((b) => (
-          <div key={b.title} className="flex gap-4 rounded-2xl border bg-card p-4 shadow-xs">
+          <div key={b.title} className="flex gap-4 rounded-2xl border bg-card p-4">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
               <BadgeCheck className="size-5" />
             </span>
@@ -419,7 +414,7 @@ export function ProPanel() {
           <h2 id="compare" className="text-lg font-bold">
             Free vs Pro
           </h2>
-          <div className="mt-3 overflow-hidden rounded-2xl border bg-card shadow-xs">
+          <div className="mt-3 overflow-hidden rounded-2xl border bg-card">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b">
@@ -461,7 +456,7 @@ export function ProPanel() {
         <h2 id="faq" className="text-lg font-bold">
           Questions
         </h2>
-        <Accordion type="single" collapsible className="mt-2 rounded-2xl border bg-card px-4 shadow-xs">
+        <Accordion type="single" collapsible className="mt-2 rounded-2xl border bg-card px-4">
           {FAQ.map((item) => (
             <AccordionItem key={item.q} value={item.q}>
               <AccordionTrigger>{item.q}</AccordionTrigger>
@@ -544,7 +539,7 @@ function UnlockCode() {
   }
 
   return (
-    <section id="unlock" aria-labelledby="unlock-title" className="rounded-2xl border bg-card p-5 shadow-xs">
+    <section id="unlock" aria-labelledby="unlock-title" className="rounded-2xl border bg-card p-5">
       <div className="flex items-center gap-3">
         <span className="flex size-10 items-center justify-center rounded-xl bg-muted">
           <KeyRound className="size-5" />

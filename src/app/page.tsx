@@ -55,7 +55,7 @@ export default function LandingPage() {
       </header>
 
       <main>
-        <section className="mx-auto grid max-w-5xl items-center gap-10 px-4 pt-4 pb-14 md:grid-cols-2 md:pt-10">
+        <section className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-10 px-4 pt-4 pb-14 md:grid-cols-2 md:pt-10">
           <div className="flex flex-col gap-5">
             <h1 className="text-[2rem] leading-[1.15] font-extrabold tracking-tight md:text-5xl">
               Send neat receipts on WhatsApp in <span className="text-primary">30 seconds</span>

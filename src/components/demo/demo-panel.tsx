@@ -137,7 +137,7 @@ export function DemoPanel() {
         <section className="flex flex-col gap-2">
           <h2 className="font-semibold">Try the Pro features</h2>
           {TOUR.map((t) => (
-            <Link key={t.href} href={t.href} className="flex min-h-14 items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-xs active:bg-muted">
+            <Link key={t.href} href={t.href} className="flex min-h-14 items-center gap-3 rounded-xl border bg-card px-4 py-3 active:bg-muted">
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">{t.label}</span>
                 <span className="block text-sm text-muted-foreground">

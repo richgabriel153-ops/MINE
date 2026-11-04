@@ -244,7 +244,7 @@ export function DocumentForm({
                   inputMode="decimal"
                   autoComplete="off"
                   placeholder="0"
-                  className="pr-8 tabular-nums"
+                  className="pr-8 amount"
                   defaultValue={form.discountPercent ?? ""}
                   aria-invalid={!!errors.discount || undefined}
                   onChange={(e) => {
@@ -389,10 +389,10 @@ export function DocumentForm({
         </div>
       </Section>
 
-      <div className="sticky bottom-0 z-30 -mx-4 flex items-center gap-3 border-t bg-background/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="sticky bottom-0 z-30 -mx-4 flex items-center gap-3 border-t bg-background px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="flex flex-col leading-tight">
           <span className="text-xs text-muted-foreground">Total</span>
-          <span className="text-lg font-bold tabular-nums">{formatNaira(totals.totalKobo)}</span>
+          <span className="text-lg font-bold amount">{formatNaira(totals.totalKobo)}</span>
         </div>
         <Button type="submit" size="lg" className="flex-1" disabled={saving}>
           {saving ? "Saving…" : editingId ? "Save changes" : `Save ${typeName}`}

@@ -118,7 +118,7 @@ export function PayView() {
         </div>
       )}
 
-      <section className="rounded-xl border bg-card p-4 shadow-xs">
+      <section className="rounded-xl border bg-card p-4">
         {invoice.customerName && <div className="text-sm text-muted-foreground">For {invoice.customerName}</div>}
         <ul className="mt-2 flex flex-col gap-1 text-sm">
           {invoice.items.map((i, n) => (
@@ -127,7 +127,7 @@ export function PayView() {
             </li>
           ))}
         </ul>
-        <dl className="mt-3 flex flex-col gap-1 border-t pt-3 text-sm tabular-nums">
+        <dl className="mt-3 flex flex-col gap-1 border-t pt-3 text-sm amount">
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Total</dt>
             <dd>{formatNaira(invoice.totalKobo)}</dd>

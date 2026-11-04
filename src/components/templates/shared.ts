@@ -7,7 +7,7 @@ import type { BusinessProfile, DocumentRecord, PaymentMethod, PaymentStatus } fr
 export const TEMPLATE_WIDTH = 540;
 
 /** Same as the app font, spelled out so exported images use it too. */
-export const TEMPLATE_FONT = "var(--font-inter), var(--font-naira), Roboto, Arial, sans-serif";
+export const TEMPLATE_FONT = "var(--font-body), var(--font-naira), Roboto, Arial, sans-serif";
 
 export interface TemplateProps {
   doc: DocumentRecord;
@@ -25,9 +25,9 @@ export const STATUS_LABEL: Record<PaymentStatus, string> = {
 };
 
 export const STATUS_COLOUR: Record<PaymentStatus, string> = {
-  paid: "#3e4580",
-  part: "#a8641a",
-  unpaid: "#b91c1c",
+  paid: "#11764a",
+  part: "#8a5300",
+  unpaid: "#b42318",
 };
 
 export const METHOD_LABEL: Record<PaymentMethod, string> = {

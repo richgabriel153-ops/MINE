@@ -46,7 +46,7 @@ function Line({ label, value, strong, muted }: { label: string; value: string; s
   return (
     <div className={cn("flex justify-between gap-3 py-1", strong && "border-t pt-2 font-semibold", muted && "text-muted-foreground")}>
       <dt>{label}</dt>
-      <dd className="shrink-0 tabular-nums">{value}</dd>
+      <dd className="shrink-0 amount">{value}</dd>
     </div>
   );
 }
@@ -147,7 +147,7 @@ export function TaxPanel() {
       <Card>
         <CardContent className="flex flex-col gap-1">
           <div className="text-sm text-muted-foreground">Estimated tax for {report.year}</div>
-          <div className="text-3xl font-extrabold tabular-nums">{formatNaira(report.totalTaxKobo)}</div>
+          <div className="text-3xl font-extrabold amount">{formatNaira(report.totalTaxKobo)}</div>
           <div className="text-sm text-muted-foreground">
             {report.kind === "company" ? "Company income tax + development levy" : "Personal income tax"}
             {report.profitKobo > 0 && ` · ${report.effectiveRatePercent}% of profit`}
@@ -155,7 +155,7 @@ export function TaxPanel() {
           <div
             className={cn(
               "mt-3 rounded-lg px-3 py-2 text-sm",
-              report.small ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-800 dark:text-amber-300",
+              report.small ? "bg-primary/10 text-primary" : "bg-warning/10 text-warning",
             )}
           >
             <strong>{report.small ? "Small business" : "Not a small business"}</strong>

@@ -50,7 +50,7 @@ export function QuotePanel({ doc, onChange }: { doc: DocumentRecord; onChange: (
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs">
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Quote status</h2>
         <span

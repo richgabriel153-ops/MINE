@@ -77,11 +77,11 @@ export function ActivityList() {
           <div key={e.id}>
             {header && <h2 className="mt-2 mb-1 text-sm font-semibold text-muted-foreground">{header}</h2>}
             {href ? (
-              <Link href={href} className="flex gap-3 rounded-xl border bg-card p-3 shadow-xs active:bg-muted">
+              <Link href={href} className="flex gap-3 rounded-xl border bg-card p-3 active:bg-muted">
                 {body}
               </Link>
             ) : (
-              <div className="flex gap-3 rounded-xl border bg-card p-3 shadow-xs">{body}</div>
+              <div className="flex gap-3 rounded-xl border bg-card p-3">{body}</div>
             )}
           </div>
         );

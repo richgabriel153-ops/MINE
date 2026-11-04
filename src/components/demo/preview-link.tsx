@@ -12,7 +12,7 @@ export function PreviewLink() {
   return (
     <Link
       href="/demo"
-      className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-dashed border-primary/50 bg-secondary px-4 py-3 shadow-xs active:bg-muted"
+      className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-dashed border-primary/50 bg-secondary px-4 py-3 active:bg-muted"
     >
       <FlaskConical className="size-6 shrink-0 text-primary" />
       <span className="min-w-0 flex-1">

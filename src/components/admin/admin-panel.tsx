@@ -82,9 +82,9 @@ const day = (iso: string | null) => (iso ? formatDate(lagosDate(new Date(iso))) 
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "warn" }) {
   return (
-    <div className={cn("rounded-xl border bg-card p-3 shadow-xs", tone === "warn" && "border-amber-500/50")}>
+    <div className={cn("rounded-xl border bg-card p-3", tone === "warn" && "border-warning/40")}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-xl font-bold tabular-nums">{value}</div>
+      <div className="text-xl font-bold amount">{value}</div>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </div>
   );
@@ -320,10 +320,10 @@ export function AdminPanel() {
         <h2 className="font-semibold">Paystack webhooks</h2>
         <Stat label="Received this week" value={n(o.webhooks_7d)} />
         {o.webhook_errors.length > 0 && (
-          <Card className="border-amber-500/50">
+          <Card className="border-warning/40">
             <CardContent className="flex flex-col gap-2 text-sm">
               <div className="flex items-center gap-2 font-semibold">
-                <AlertTriangle className="size-4 text-amber-600" /> Recent errors
+                <AlertTriangle className="size-4 text-warning" /> Recent errors
               </div>
               {o.webhook_errors.map((e) => (
                 <div key={e.id} className="border-t pt-2">
@@ -360,7 +360,7 @@ export function AdminPanel() {
         </form>
         <ul className="flex flex-col gap-2">
           {shownRows.map((b) => (
-            <li key={b.id} className="rounded-xl border bg-card p-3 text-sm shadow-xs">
+            <li key={b.id} className="rounded-xl border bg-card p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="truncate font-semibold">{b.name || "(no name)"}</div>
@@ -372,14 +372,14 @@ export function AdminPanel() {
                     b.is_pro
                       ? "bg-primary/10 text-primary"
                       : b.billing_status === "attention"
-                        ? "bg-amber-500/15 text-amber-800"
+                        ? "bg-warning/10 text-warning"
                         : "bg-muted",
                   )}
                 >
                   {planLabel(b)}
                 </span>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-1 text-xs text-muted-foreground tabular-nums">
+              <div className="mt-2 grid grid-cols-3 gap-1 text-xs text-muted-foreground amount">
                 <span>Joined {day(b.created_at)}</span>
                 <span>Active {day(b.last_active)}</span>
                 <span>{b.period_end && b.is_pro && !b.comp ? `Renews ${day(b.period_end)}` : ""}</span>

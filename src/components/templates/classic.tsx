@@ -139,7 +139,7 @@ export function ClassicTemplate({ doc, profile, showFooterBrand, payNow }: Templ
           {doc.status === "part" && (
             <>
               <Row label="Amount paid" value={formatNaira(totals.amountPaidKobo)} />
-              <Row label="Balance" value={formatNaira(totals.balanceKobo)} bold colour={STATUS_COLOUR.part} />
+              <Row label="Balance" value={formatNaira(totals.balanceKobo)} bold colour={STATUS_COLOUR.unpaid} />
             </>
           )}
           {doc.status === "unpaid" && isInvoice && (

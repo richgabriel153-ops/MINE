@@ -75,7 +75,7 @@ export function QuotesList() {
         <ul className="flex flex-col gap-2">
           {shown.map(({ doc, status }) => (
             <li key={doc.id}>
-              <Link href={`/view?id=${doc.id}`} className="flex min-h-16 items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-xs active:bg-muted">
+              <Link href={`/view?id=${doc.id}`} className="flex min-h-16 items-center gap-3 rounded-xl border bg-card px-4 py-3 active:bg-muted">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{doc.number}</span>
@@ -92,7 +92,7 @@ export function QuotesList() {
                     {doc.customer.name || (doc.quoteTitle === "proforma" ? "Proforma invoice" : "Quotation")} · {formatDate(doc.issueDate)}
                   </div>
                 </div>
-                <div className="font-semibold tabular-nums">{formatNaira(computeTotals(doc).totalKobo)}</div>
+                <div className="font-semibold amount">{formatNaira(computeTotals(doc).totalKobo)}</div>
                 <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
               </Link>
             </li>

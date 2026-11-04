@@ -107,7 +107,7 @@ export function AccountPanel() {
                 setActiveBusinessId(b.business_id);
                 hardNavigate(next);
               }}
-              className="flex cursor-pointer items-center gap-3 rounded-xl border bg-card p-4 text-left shadow-xs"
+              className="flex cursor-pointer items-center gap-3 rounded-xl border bg-card p-4 text-left"
             >
               <Building2 className="size-6 text-primary" />
               <span className="flex-1">
@@ -264,7 +264,7 @@ function SignedIn() {
         </CardContent>
       </Card>
       {access.role === "owner" && (
-        <Link href="/pro" className="flex items-center justify-between rounded-xl border bg-card p-4 shadow-xs">
+        <Link href="/pro" className="flex items-center justify-between rounded-xl border bg-card p-4">
           <span>
             <span className="block font-semibold">Plan: {billing.title}</span>
             <span className="block text-sm text-muted-foreground">{billing.detail}</span>

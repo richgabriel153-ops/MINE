@@ -251,7 +251,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
               setError(null);
             }}
             placeholder="123456"
-            className="text-center text-2xl tracking-[0.4em] tabular-nums"
+            className="text-center text-2xl tracking-[0.4em] amount"
             aria-invalid={!!error || undefined}
             autoFocus
           />

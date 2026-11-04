@@ -29,7 +29,7 @@ export function AdminLink({ signedIn }: { signedIn: boolean }) {
   return (
     <Link
       href="/admin"
-      className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-dashed bg-card px-4 py-3 shadow-xs active:bg-muted"
+      className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-dashed bg-card px-4 py-3 active:bg-muted"
     >
       <Gauge className="size-6 shrink-0 text-primary" />
       <span className="min-w-0 flex-1">

@@ -1,7 +1,10 @@
 /** Free version shows only the newest documents in History (older ones stay saved and in backups). */
 export const FREE_HISTORY_LIMIT = 50;
 
-export const PRO_BENEFITS = [
+/** Pay Now links only appear once real payments are switched on. */
+const PAY_LINKS = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "on";
+
+const ALL_BENEFITS = [
   { title: "InCeipt Assistant (AI)", text: "Just type “Receipt for Ada, 2 bags of rice at ₦45,000” and it's done for you." },
   { title: "Tax accountant", text: "Income tax and VAT worked out under the Nigeria Tax Act 2025, with deadlines and a tax report." },
   { title: "Track who owes you", text: "Record part payments and see every outstanding balance." },
@@ -12,12 +15,14 @@ export const PRO_BENEFITS = [
   { title: "Your brand only, 5 templates", text: "No “Made with InCeipt” line, plus Bold and Elegant designs." },
 ] as const;
 
+export const PRO_BENEFITS = ALL_BENEFITS.filter((b) => PAY_LINKS || b.title !== "Pay Now links");
+
 /** Free vs Pro, row by row, for the comparison table. true = included. */
 export const PRO_COMPARISON: { feature: string; free: string | boolean; pro: string | boolean }[] = [
   { feature: "Receipts & invoices", free: "Unlimited", pro: "Unlimited" },
   { feature: "Send on WhatsApp, PNG & PDF", free: true, pro: true },
   { feature: "Part payments & money owed", free: false, pro: true },
-  { feature: "Pay Now links on invoices", free: false, pro: true },
+  ...(PAY_LINKS ? [{ feature: "Pay Now links on invoices", free: false, pro: true }] : []),
   { feature: "Quotations", free: false, pro: true },
   { feature: "Expenses & profit", free: false, pro: true },
   { feature: "Staff accounts", free: false, pro: true },

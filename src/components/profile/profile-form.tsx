@@ -197,7 +197,7 @@ export function ProfileForm({ initial }: { initial: BusinessProfile }) {
               value={profile.accountNumber}
               onChange={(e) => set("accountNumber", e.target.value.replace(/\D/g, ""))}
               placeholder="10 digits"
-              className="tabular-nums tracking-wider"
+              className="amount tracking-wider"
               aria-invalid={!!errors.accountNumber || undefined}
             />
           </Field>
@@ -223,7 +223,7 @@ export function ProfileForm({ initial }: { initial: BusinessProfile }) {
         </CardContent>
       </Card>
 
-      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 -mx-4 border-t bg-background/95 px-4 py-3 backdrop-blur md:bottom-0">
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 -mx-4 border-t bg-background px-4 py-3 md:bottom-0">
         <Button type="submit" size="lg" className="w-full" disabled={saving}>
           {saving ? "Saving…" : next ? "Save and continue" : "Save business details"}
         </Button>

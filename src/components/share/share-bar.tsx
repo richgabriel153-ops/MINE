@@ -92,7 +92,7 @@ export function ShareBar({
 
   return (
     <div className="flex flex-col gap-3">
-      <Button size="lg" className="w-full bg-[#1fa855] hover:bg-[#1b9a4d]" onClick={onShare} disabled={!ready}>
+      <Button size="lg" className="w-full bg-[#1b7f4c] hover:bg-[#176c41] active:bg-[#176c41]" onClick={onShare} disabled={!ready}>
         {ready ? <MessageCircle /> : <Loader2 className="animate-spin" />}
         {ready ? `Send ${kind === "proforma invoice" ? "proforma" : kind} on WhatsApp` : failed ? "Image not ready" : "Getting image ready…"}
       </Button>
@@ -122,7 +122,7 @@ export function ShareBar({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button asChild size="lg" className="bg-[#1fa855] hover:bg-[#1b9a4d]">
+            <Button asChild size="lg" className="bg-[#1b7f4c] hover:bg-[#176c41] active:bg-[#176c41]">
               <a href={whatsappLink(doc, message)} target="_blank" rel="noopener noreferrer" onClick={() => setFallbackOpen(false)}>
                 <MessageCircle /> Open WhatsApp
               </a>

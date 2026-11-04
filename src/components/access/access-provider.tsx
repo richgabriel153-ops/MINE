@@ -86,13 +86,13 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
       <Dialog open={upgradeFeature !== null} onOpenChange={(o) => !o && setUpgradeFeature(null)}>
         <DialogContent>
           <DialogHeader>
-            <span className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-highlight/20 text-[#5a4210]">
+            <span className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-highlight/20 text-[#7a2e0e]">
               <Lock className="size-5" />
             </span>
             <DialogTitle>{upgradeFeature} is a Pro feature</DialogTitle>
             <DialogDescription>
               Upgrade to InCeipt Pro to unlock it, along with the AI assistant, tax estimates, debt tracking, quotations,
-              expenses and profit, staff accounts and Pay Now links. From ₦3,000 a month.
+              expenses and profit, and staff accounts.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -137,7 +137,7 @@ export function useAccess(): AccessContextValue {
 export function ProLock({ className }: { className?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-0.5 rounded bg-highlight/25 px-1 py-px text-[9px] font-bold text-[#5a4210] ${className ?? ""}`}
+      className={`inline-flex items-center gap-0.5 rounded bg-highlight/25 px-1 py-px text-[9px] font-bold text-[#7a2e0e] ${className ?? ""}`}
     >
       <Lock className="size-2.5" aria-hidden />
       PRO

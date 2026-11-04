@@ -2,6 +2,7 @@
  * Records stored in the InCeipt account (Supabase). Writes go through database functions that
  * check the caller's role and Pro status; see supabase/migrations.
  */
+import { currentBrandColor } from "../brand";
 import { formatDocNumber, type Counters } from "../numbering";
 import { computeTotals } from "../totals";
 import type { Expense, ExpenseDraft } from "../expenses";
@@ -113,7 +114,9 @@ async function getBusiness(businessId: string): Promise<BusinessRow> {
 
 export async function getProfile(businessId: string): Promise<BusinessProfile> {
   const b = await getBusiness(businessId);
-  return { ...EMPTY_PROFILE, ...b.profile };
+  const profile = { ...EMPTY_PROFILE, ...b.profile };
+  // Businesses still on an old default colour show the new one.
+  return { ...profile, brandColor: currentBrandColor(profile.brandColor) };
 }
 
 export async function saveProfile(businessId: string, profile: BusinessProfile): Promise<void> {

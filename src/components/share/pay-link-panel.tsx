@@ -28,7 +28,7 @@ export function PayLinkPanel({
   const [copied, setCopied] = useState(false);
   if (!access) return null;
 
-  const box = "flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs";
+  const box = "flex flex-col gap-3 rounded-xl border bg-card p-4";
   const title = (
     <div className="flex items-center gap-2 font-semibold">
       <Link2 className="size-5 text-primary" /> Pay Now link {!access.can.payLinks && <ProLock />}

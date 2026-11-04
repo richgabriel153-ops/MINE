@@ -110,7 +110,7 @@ export function CustomersPanel() {
               <button
                 type="button"
                 onClick={() => setOpen(c)}
-                className="flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left shadow-xs active:bg-muted"
+                className="flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left active:bg-muted"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{c.name || "No name"}</span>
@@ -249,7 +249,7 @@ function CustomerDialog({
                   {owed > 0 && (
                     <>
                       {" "}
-                      · owes <strong className="tabular-nums">{formatNaira(owed)}</strong>
+                      · owes <strong className="amount">{formatNaira(owed)}</strong>
                     </>
                   )}
                 </p>

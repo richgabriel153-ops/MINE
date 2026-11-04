@@ -55,7 +55,7 @@ export function LineItemsEditor({
               ? lineTotalKobo({ quantity: item.quantity, unitPriceKobo: item.unitPriceKobo })
               : null;
           return (
-            <li key={item.id} className="rounded-xl border bg-card p-3 shadow-xs">
+            <li key={item.id} className="rounded-xl border bg-card p-3">
               <div className="flex items-start gap-2">
                 <div className="flex flex-1 flex-col gap-1.5">
                   <Label htmlFor={`item-${item.id}-desc`} className="sr-only">
@@ -109,7 +109,7 @@ export function LineItemsEditor({
               </div>
               <div className="mt-2 flex items-center justify-between text-sm">
                 <span className="text-destructive">{e?.quantity ?? e?.price ?? ""}</span>
-                <span className="text-muted-foreground tabular-nums">
+                <span className="text-muted-foreground amount">
                   {lineTotal !== null && item.quantity !== 1 ? `= ${formatNaira(lineTotal)}` : ""}
                 </span>
               </div>

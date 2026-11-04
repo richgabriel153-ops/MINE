@@ -15,7 +15,7 @@ export function cleanProfileForUpload(p: BusinessProfile): BusinessProfile {
     accountName: cut(p.accountName),
     instagram: cut(p.instagram),
     accountNumber: digits.length === 10 ? digits : "",
-    brandColor: /^#[0-9a-fA-F]{6}$/.test(p.brandColor ?? "") ? p.brandColor : "#1f6f4a",
+    brandColor: /^#[0-9a-fA-F]{6}$/.test(p.brandColor ?? "") ? p.brandColor : "#0b5f5a",
     logo: /^data:image\/(png|webp|jpeg);base64,[A-Za-z0-9+/=]+$/.test(p.logo ?? "") && p.logo.length < 350_000 ? p.logo : "",
   };
 }

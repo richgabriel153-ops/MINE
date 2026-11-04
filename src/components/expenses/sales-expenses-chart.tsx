@@ -5,9 +5,9 @@ import { useState } from "react";
 import { formatNaira } from "@/lib/money";
 import { niceTicks, shortNaira, type MonthBar } from "@/lib/profit";
 
-/** Validated pair (light surface): passes lightness, chroma, colour-blind separation and contrast checks. */
-const SALES = "#5560c4";
-const EXPENSES = "#c27a16";
+/** Brand teal vs coral: different in lightness and hue, so they stay apart for colour-blind users. */
+const SALES = "#0b5f5a";
+const EXPENSES = "#e86a33";
 
 const monthName = (m: string) =>
   new Date(`${m}-01T00:00:00Z`).toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
@@ -88,7 +88,7 @@ export function SalesExpensesChart({ data }: { data: MonthBar[] }) {
       </div>
 
       {asTable ? (
-        <table className="w-full text-sm tabular-nums">
+        <table className="w-full text-sm amount">
           <thead>
             <tr className="border-b text-muted-foreground">
               <th className="py-1.5 text-left font-medium">Month</th>
@@ -112,7 +112,7 @@ export function SalesExpensesChart({ data }: { data: MonthBar[] }) {
             {tip ? (
               <>
                 <span className="text-muted-foreground">{tip.label}: </span>
-                <strong className="tabular-nums">{tip.value}</strong>
+                <strong className="amount">{tip.value}</strong>
               </>
             ) : (
               <span className="text-muted-foreground">Tap a bar to see the amount</span>

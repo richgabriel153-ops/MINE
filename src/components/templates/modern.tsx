@@ -131,7 +131,7 @@ export function ModernTemplate({ doc, profile, showFooterBrand, payNow }: Templa
                 <span className="text-[#6b7280]">Paid</span>
                 <span>{formatNaira(totals.amountPaidKobo)}</span>
               </div>
-              <div style={{ color: STATUS_COLOUR.part }} className="flex justify-between py-0.5 font-bold">
+              <div style={{ color: STATUS_COLOUR.unpaid }} className="flex justify-between py-0.5 font-bold">
                 <span>Balance</span>
                 <span>{formatNaira(totals.balanceKobo)}</span>
               </div>

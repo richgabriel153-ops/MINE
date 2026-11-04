@@ -28,7 +28,7 @@ export function QuantityInput({
       type="text"
       inputMode="decimal"
       autoComplete="off"
-      className="text-center tabular-nums"
+      className="text-center amount"
       value={text}
       aria-invalid={invalid || undefined}
       onChange={(e) => {

@@ -5,15 +5,15 @@ import { ServiceWorker } from "@/components/pwa/service-worker";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-// Inter (Latin) self-hosted, ~48 KB. Loaded once, cached forever.
-const inter = localFont({
-  src: "../fonts/inter-latin.woff2",
-  variable: "--font-inter",
-  weight: "100 900",
+// Atkinson Hyperlegible Next (Latin), self-hosted, ~34 KB. Designed for low vision: clear in sunlight on small screens.
+const body = localFont({
+  src: "../fonts/atkinson-next-latin.woff2",
+  variable: "--font-body",
+  weight: "200 800",
   display: "swap",
 });
 
-// Just the ₦ glyph from Inter's Latin-extended set (~1 KB), so ₦ looks the same on every phone.
+// Just the ₦ glyph (~1 KB; Atkinson has none), so ₦ looks the same on every phone.
 const naira = localFont({
   src: "../fonts/inter-naira.woff2",
   variable: "--font-naira",
@@ -37,12 +37,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#3e4580",
+  viewportFit: "cover",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en-NG" className={`${inter.variable} ${naira.variable}`}>
+    <html lang="en-NG" className={`${body.variable} ${naira.variable}`}>
       <body className="min-h-dvh">
         {children}
         <Toaster />

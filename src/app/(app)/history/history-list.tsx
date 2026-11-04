@@ -115,7 +115,7 @@ export function HistoryList() {
         <Input
           type="search"
           inputMode="search"
-          placeholder="Search name, number, phone or item"
+          placeholder="Search name, number or phone"
           aria-label="Search"
           className="pr-11 pl-10"
           defaultValue={query}
@@ -170,7 +170,7 @@ export function HistoryList() {
       </p>
 
       {limited && (
-        <Link href="/pro" className="rounded-xl border border-highlight/50 bg-highlight/10 p-3 text-sm text-[#5a4210]">
+        <Link href="/pro" className="rounded-xl border border-highlight/50 bg-highlight/10 p-3 text-sm text-[#7a2e0e]">
           Showing your latest {FREE_HISTORY_LIMIT} records. Older ones are safe in your account.{" "}
           <span className="font-semibold underline">Go Pro to see them all.</span>
         </Link>
@@ -188,7 +188,7 @@ export function HistoryList() {
       ) : (
         groups.map((g) => (
           <section key={g.key} className="flex flex-col gap-2">
-            <h2 className="sticky top-0 z-10 -mx-4 bg-background/95 px-4 py-1 text-sm font-semibold text-muted-foreground backdrop-blur md:top-14">
+            <h2 className="sticky top-0 z-10 -mx-4 bg-background px-4 py-1 text-sm font-semibold text-muted-foreground md:top-14">
               {g.label}
             </h2>
             <ul className="flex flex-col gap-2">

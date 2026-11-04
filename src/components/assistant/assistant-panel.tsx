@@ -295,7 +295,7 @@ export function AssistantPanel() {
                 key={s}
                 type="button"
                 onClick={() => send(s)}
-                className="min-h-11 rounded-xl border bg-card px-3 py-2 text-left text-sm shadow-xs active:bg-muted"
+                className="min-h-11 rounded-xl border bg-card px-3 py-2 text-left text-sm active:bg-muted"
               >
                 {s}
               </button>
@@ -326,7 +326,7 @@ export function AssistantPanel() {
             .filter(Boolean);
           return (
             <li key={i} className="mr-6 flex flex-col gap-2">
-              {text && <div className="rounded-2xl rounded-bl-sm bg-card px-3.5 py-2 text-sm whitespace-pre-wrap shadow-xs ring-1 ring-border">{text}</div>}
+              {text && <div className="rounded-2xl rounded-bl-sm bg-card px-3.5 py-2 text-sm whitespace-pre-wrap ring-1 ring-border">{text}</div>}
               {actionCards.map((c) => (
                 <ActionCardView key={c.id} card={c} />
               ))}
@@ -426,7 +426,7 @@ function ActionCardView({ card }: { card: ActionCard }) {
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-3 text-sm shadow-xs",
+        "rounded-xl border bg-card p-3 text-sm",
         card.state === "pending" && "border-primary ring-2 ring-primary/20",
         card.state === "cancelled" && "opacity-60",
         card.state === "failed" && "border-destructive/50",
@@ -439,7 +439,7 @@ function ActionCardView({ card }: { card: ActionCard }) {
         </span>
       </div>
       {card.summary.lines.length > 0 && (
-        <ul className="mt-1 flex flex-col gap-0.5 text-muted-foreground tabular-nums">
+        <ul className="mt-1 flex flex-col gap-0.5 text-muted-foreground amount">
           {card.summary.lines.map((l, i) => (
             <li key={i} className={cn(l.startsWith("Total") && "font-semibold text-foreground")}>
               {l}

@@ -95,5 +95,5 @@ export const EMPTY_PROFILE: BusinessProfile = {
   accountName: "",
   accountNumber: "",
   instagram: "",
-  brandColor: "#3e4580",
+  brandColor: "#0b5f5a",
 };

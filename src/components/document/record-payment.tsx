@@ -122,7 +122,7 @@ export function PaymentHistory({ doc }: { doc: DocumentRecord }) {
 
   if (!show || !payments || payments.length === 0) return null;
   return (
-    <section className="rounded-xl border bg-card p-4 shadow-xs">
+    <section className="rounded-xl border bg-card p-4">
       <h2 className="mb-2 text-sm font-semibold text-muted-foreground uppercase">Payments</h2>
       <ul className="flex flex-col gap-2 text-sm">
         {payments.map((p, i) => (
@@ -131,7 +131,7 @@ export function PaymentHistory({ doc }: { doc: DocumentRecord }) {
               {formatDate(p.paid_on)} · {METHOD_LABEL[p.method] ?? p.method}
               {p.created_by_name && <span className="text-muted-foreground"> · {p.created_by_name}</span>}
             </span>
-            <span className="font-semibold tabular-nums">{formatNaira(p.amount_kobo)}</span>
+            <span className="font-semibold amount">{formatNaira(p.amount_kobo)}</span>
           </li>
         ))}
       </ul>

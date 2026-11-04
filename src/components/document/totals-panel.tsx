@@ -9,7 +9,7 @@ export function TotalsPanel({ totals, status }: { totals: Totals; status: Paymen
   if (totals.deliveryKobo) rows.push(["Delivery", formatNaira(totals.deliveryKobo)]);
 
   return (
-    <dl className="flex flex-col gap-1.5 rounded-xl bg-secondary/60 p-4 text-sm tabular-nums">
+    <dl className="flex flex-col gap-1.5 rounded-xl bg-secondary/60 p-4 text-sm amount">
       {rows.map(([label, value]) => (
         <div key={label} className="flex justify-between">
           <dt className="text-muted-foreground">{label}</dt>

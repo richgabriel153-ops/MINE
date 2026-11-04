@@ -93,10 +93,10 @@ export function ProfitPanel() {
       <Card>
         <CardContent className="flex flex-col gap-1">
           <div className="text-sm text-muted-foreground">{loss ? "Loss" : "Profit"}</div>
-          <div className={`text-3xl font-extrabold tabular-nums ${loss ? "text-destructive" : ""}`}>
+          <div className={`text-3xl font-extrabold amount ${loss ? "text-destructive" : ""}`}>
             {formatNaira(Math.abs(summary.profitKobo))}
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-sm tabular-nums">
+          <dl className="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-sm amount">
             <div>
               <dt className="text-muted-foreground">Sales received</dt>
               <dd className="text-lg font-semibold">{formatNaira(summary.salesKobo)}</dd>
@@ -109,10 +109,10 @@ export function ProfitPanel() {
         </CardContent>
       </Card>
 
-      <Link href="/history?status=owing" className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-xs">
+      <Link href="/history?status=owing" className="flex items-center gap-3 rounded-xl border bg-card p-4">
         <Info className="size-5 shrink-0 text-muted-foreground" />
         <span className="flex-1 text-sm">
-          Customers still owe you <strong className="tabular-nums">{formatNaira(data.owingKobo)}</strong>. This isn&apos;t
+          Customers still owe you <strong className="amount">{formatNaira(data.owingKobo)}</strong>. This isn&apos;t
           counted as profit until it&apos;s paid.
         </span>
         <ChevronRight className="size-5 text-muted-foreground" />
@@ -129,7 +129,7 @@ export function ProfitPanel() {
         <Card>
           <CardContent className="flex flex-col gap-2">
             <h2 className="font-semibold">Where the money went</h2>
-            <ul className="flex flex-col gap-1.5 text-sm tabular-nums">
+            <ul className="flex flex-col gap-1.5 text-sm amount">
               {categories.map((c) => (
                 <li key={c.category} className="flex justify-between">
                   <span>{c.category}</span>

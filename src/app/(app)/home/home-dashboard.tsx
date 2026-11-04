@@ -42,11 +42,21 @@ export function HomeDashboard() {
   }, [access, owner]);
   const docs = recent;
 
+  const name = profile?.name || "InCeipt";
+
   return (
-    <div className="flex flex-col gap-6">
-      <header className="pt-5">
-        <p className="text-sm text-muted-foreground">Welcome{profile?.name ? " back" : ""}</p>
-        <h1 className="text-2xl font-bold tracking-tight">{profile?.name || "InCeipt"}</h1>
+    <div className="flex flex-col gap-5">
+      <header className="flex items-center gap-3 pt-5">
+        <span
+          aria-hidden
+          className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-highlight text-base font-bold text-[#0e1d1c]"
+        >
+          {initials(name)}
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">Welcome{profile?.name ? " back" : ""}</p>
+          <h1 className="truncate text-xl leading-tight font-bold">{name}</h1>
+        </div>
       </header>
 
       {profile && !profile.name && (
@@ -61,73 +71,65 @@ export function HomeDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/create"
-          className="flex flex-col gap-2 rounded-2xl bg-primary p-4 text-primary-foreground shadow-sm active:scale-[0.98]"
-        >
-          <ReceiptText className="size-7" />
-          <span className="text-base font-semibold">New receipt</span>
-          <span className="text-xs opacity-85">Customer has paid</span>
-        </Link>
-        <Link
-          href="/create?type=invoice"
-          className="flex flex-col gap-2 rounded-2xl border bg-card p-4 shadow-xs active:scale-[0.98]"
-        >
-          <FileText className="size-7 text-primary" />
-          <span className="text-base font-semibold">New invoice</span>
-          <span className="text-xs text-muted-foreground">Ask for payment</span>
-        </Link>
-      </div>
-
-      {summary && docs && docs.length > 0 && owner && (
-        <section aria-label="Summary" className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border bg-card p-4 shadow-xs">
-            <div className="text-xs text-muted-foreground">Sales this week</div>
-            <div className="mt-1 text-xl font-bold tabular-nums">{formatNaira(summary.weekKobo)}</div>
-          </div>
-          <div className="rounded-2xl border bg-card p-4 shadow-xs">
-            <div className="text-xs text-muted-foreground">Sales this month</div>
-            <div className="mt-1 text-xl font-bold tabular-nums">{formatNaira(summary.monthKobo)}</div>
+      {summary && owner && (
+        <section aria-label="Money" className="flex flex-col gap-2">
+          <div className="rounded-2xl bg-secondary p-4">
+            <div className="text-sm font-semibold text-muted-foreground">Money in this week</div>
+            <div className="amount mt-1 text-[2rem] leading-tight font-bold">{formatNaira(summary.weekKobo)}</div>
+            <div className="mt-3 flex items-baseline justify-between border-t border-border pt-3 text-sm">
+              <span className="text-muted-foreground">This month</span>
+              <span className="amount font-bold">{formatNaira(summary.monthKobo)}</span>
+            </div>
           </div>
           {canTrackDebts ? (
-          <Link
+            <Link
               href="/history?status=owing"
-              className="col-span-2 flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-xs active:bg-muted"
+              className="press flex min-h-14 items-center gap-3 rounded-xl border bg-card px-4 py-3 active:bg-muted"
             >
-              <div className="flex-1">
-                <div className="text-xs text-muted-foreground">Customers owe you</div>
-                <div className={`mt-1 text-xl font-bold tabular-nums ${summary.owingKobo > 0 ? "text-warning" : ""}`}>
-                  {formatNaira(summary.owingKobo)}
-                </div>
-                <div className="text-xs text-muted-foreground">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold">Customers owe you</div>
+                <div className="text-sm text-muted-foreground">
                   {summary.owingCount === 0
                     ? "Nothing outstanding"
-                    : `${summary.owingCount} unpaid or part-paid ${summary.owingCount === 1 ? "document" : "documents"}`}
+                    : `${summary.owingCount} unpaid or part paid`}
                 </div>
               </div>
+              <span className={`amount font-bold ${summary.owingKobo > 0 ? "text-destructive" : ""}`}>
+                {formatNaira(summary.owingKobo)}
+              </span>
               <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
             </Link>
           ) : (
             <button
               type="button"
               onClick={() => showUpgrade("Debt tracking")}
-              className="col-span-2 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed bg-card p-4 text-left shadow-xs"
+              className="press flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-dashed bg-card px-4 py-3 text-left"
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 font-semibold">
                   Customers owe you <ProLock />
                 </div>
-                <div className="mt-1 text-sm font-medium">See who owes you money and record part payments with Pro.</div>
+                <div className="text-sm text-muted-foreground">See who owes you and record part payments with Pro.</div>
               </div>
               <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
             </button>
           )}
-          <p className="col-span-2 -mt-1 text-xs text-muted-foreground">
-            Sales = money received, on the day it was paid. Weeks start on Monday.
-          </p>
+          <p className="text-xs text-muted-foreground">Money in = payments received, on the day they were paid. Weeks start on Monday.</p>
         </section>
       )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Button asChild size="lg" className="h-14">
+          <Link href="/create">
+            <ReceiptText /> Receipt
+          </Link>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="h-14 border-foreground/80">
+          <Link href="/create?type=invoice">
+            <FileText /> Invoice
+          </Link>
+        </Button>
+      </div>
 
       {loadError && (
         <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
@@ -145,7 +147,11 @@ export function HomeDashboard() {
           )}
         </div>
         {docs === null ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <ul className="flex flex-col gap-2" aria-busy="true" aria-label="Loading">
+            {Array.from({ length: 3 }, (_, i) => (
+              <li key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+            ))}
+          </ul>
         ) : docs.length === 0 ? (
           <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
             Your receipts and invoices will show here.
@@ -164,7 +170,7 @@ export function HomeDashboard() {
       <InstallButton className="w-full" />
 
       {access && !access.isPro && (
-        <Link href="/pro" className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm shadow-xs">
+        <Link href="/pro" className="press flex items-center gap-3 rounded-xl border bg-card p-4 text-sm active:bg-muted">
           <BadgeCheck className="size-6 shrink-0 text-primary" />
           <span className="flex-1">
             <strong>Go Pro:</strong> remove the InCeipt footer, get 2 extra templates and unlimited history.
@@ -174,4 +180,11 @@ export function HomeDashboard() {
       )}
     </div>
   );
+}
+
+/** Up to two initials for the business mark, e.g. "Mama Chi Kitchen" -> "MC". */
+function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters = words.slice(0, 2).map((w) => [...w][0] ?? "");
+  return letters.join("").toUpperCase() || "IN";
 }

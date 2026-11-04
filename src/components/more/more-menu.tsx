@@ -6,7 +6,6 @@ import {
   Calculator,
   ChevronRight,
   ClipboardList,
-  Contact,
   FileText,
   Landmark,
   LineChart,
@@ -41,7 +40,6 @@ interface Item {
 const ITEMS: Item[] = [
   { href: "/assistant", label: "Assistant (AI)", text: "Type what you want, it's done for you", icon: Sparkles, pro: (c) => c.assistant, cloudOnly: true },
   { href: "/account", label: "Account", text: "Sign in, switch business", icon: UserRound },
-  { href: "/customers", label: "Customers", text: "Everyone you've sold to", icon: Contact },
   { href: "/profile", label: "Business details", text: "Logo, contacts, bank, colour", icon: Store, show: (_c, _m, r) => r === "owner" },
   { href: "/quotes", label: "Quotations", text: "Quotes and proforma invoices", icon: FileText, pro: (c) => c.quotes },
   { href: "/expenses", label: "Expenses", text: "Log what you spend", icon: Wallet, show: (_c, _m, r) => r === "owner", pro: (c) => c.expenses },
@@ -82,7 +80,7 @@ export function MoreMenu() {
             <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
           </>
         );
-        const cls = "flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left shadow-xs active:bg-muted";
+        const cls = "flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left active:bg-muted";
         return (
           <li key={item.href}>
             {locked ? (

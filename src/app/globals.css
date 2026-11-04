@@ -6,32 +6,33 @@
 :root {
   color-scheme: light;
   --radius: 0.75rem;
-  /* InCeipt: matte indigo with a muted amber accent */
-  --background: #f5f5f8;
-  --foreground: #1c1e33;
+  /* InCeipt "Lagoon": deep teal with a coral brand mark. Contrast-checked for sunlight on cheap screens. */
+  --background: #ffffff;
+  --foreground: #0e1d1c;
   --card: #ffffff;
-  --card-foreground: #1c1e33;
+  --card-foreground: #0e1d1c;
   --popover: #ffffff;
-  --popover-foreground: #1c1e33;
-  --primary: #3e4580;
+  --popover-foreground: #0e1d1c;
+  --primary: #0b5f5a;
   --primary-foreground: #ffffff;
-  --secondary: #ebecf5;
-  --secondary-foreground: #2c3163;
-  --muted: #eeeef3;
-  --muted-foreground: #5f6278;
-  --accent: #ebecf5;
-  --accent-foreground: #2c3163;
-  --destructive: #c62828;
-  --border: #dfe0e9;
-  --input: #cfd1de;
-  --ring: #3e4580;
-  --success: #3e4580;
-  --warning: #a8641a;
-  --highlight: #d9a441;
+  --secondary: #eff5f4;
+  --secondary-foreground: #0b4f4b;
+  --muted: #eff5f4;
+  --muted-foreground: #4d5e5c;
+  --accent: #e3eeec;
+  --accent-foreground: #0e1d1c;
+  --destructive: #b42318;
+  --border: #d3e0de;
+  --input: #84928f;
+  --ring: #0b5f5a;
+  --success: #11764a;
+  --warning: #8a5300;
+  --highlight: #e86a33;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), var(--font-naira), ui-sans-serif, system-ui, Roboto, "Segoe UI", Arial, sans-serif;
+  --font-sans: var(--font-body), var(--font-naira), ui-sans-serif, system-ui, Roboto, "Segoe UI", Arial, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -66,9 +67,55 @@
   html {
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    overscroll-behavior-y: none;
+  }
+  /* Taps fire at once (no double-tap-zoom wait); zoom by pinch still works. */
+  a,
+  button,
+  [role="button"],
+  label,
+  summary,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+  button,
+  [role="button"],
+  [role="tab"],
+  summary {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* 16px or more stops iPhones zooming into a field on focus. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+  /* Press feedback: a quick, small squeeze that follows the finger. */
+  .press {
+    transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+    .press:active {
+      transform: none;
+    }
   }
   /* Hide number spinners: we use text inputs with inputmode instead. */
   input[type="number"]::-webkit-inner-spin-button,
@@ -80,4 +127,13 @@
 
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Naira amounts: equal-width digits so columns line up. */
+@utility amount {
+  font-variant-numeric: tabular-nums;
 }

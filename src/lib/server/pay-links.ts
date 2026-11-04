@@ -1,5 +1,6 @@
 import "server-only";
 
+import { currentBrandColor } from "@/lib/brand";
 import { lagosDate } from "@/lib/dates";
 import { formatNaira } from "@/lib/money";
 import { supabaseAdmin } from "./supabase-admin";
@@ -95,7 +96,7 @@ export async function invoiceForToken(token: string): Promise<PublicInvoice | nu
   return {
     businessName: profile.name ?? "",
     logo: profile.logo ?? "",
-    brandColor: profile.brandColor ?? "#3e4580",
+    brandColor: currentBrandColor(profile.brandColor),
     number: doc.number,
     customerName: data.customer?.name ?? "",
     issueDate: doc.issue_date,

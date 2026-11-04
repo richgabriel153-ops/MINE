@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Matte, professional colours that print and share well. The first is the InCeipt default.
-const SWATCHES = ["#3e4580", "#24476b", "#5b4a8a", "#8c3b5e", "#a9532f", "#8a6a2b", "#2f6763", "#26272f"];
+const SWATCHES = ["#0b5f5a", "#1d4e89", "#11764a", "#8c3b5e", "#b4441f", "#8a5300", "#3f5b24", "#1f2a2a"];
 
 export function ColourPicker({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
   const isCustom = !SWATCHES.includes(value.toLowerCase());

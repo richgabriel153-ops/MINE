@@ -43,7 +43,7 @@ export function MoneyInput({
         inputMode="decimal"
         autoComplete="off"
         placeholder={placeholder}
-        className="pl-7 tabular-nums"
+        className="pl-7 amount"
         value={text}
         aria-invalid={invalid || undefined}
         onChange={(e) => {

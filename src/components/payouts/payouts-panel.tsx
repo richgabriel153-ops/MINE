@@ -192,7 +192,7 @@ export function PayoutsPanel() {
                     setAccountName(null);
                   }}
                   placeholder="10 digits"
-                  className="tracking-wider tabular-nums"
+                  className="tracking-wider amount"
                 />
               </Field>
               {checking && (

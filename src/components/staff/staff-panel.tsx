@@ -131,7 +131,7 @@ export function StaffPanel() {
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
           members.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-xs">
+            <div key={m.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{m.name || m.email}</div>
                 <div className="truncate text-sm text-muted-foreground">
@@ -169,7 +169,7 @@ export function StaffPanel() {
           </DialogHeader>
           <p className="rounded-lg bg-muted p-3 text-sm whitespace-pre-line">{message}</p>
           <DialogFooter>
-            <Button asChild size="lg" className="bg-[#1fa855] hover:bg-[#1b9a4d]">
+            <Button asChild size="lg" className="bg-[#1b7f4c] hover:bg-[#176c41] active:bg-[#176c41]">
               <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">
                 <MessageCircle /> Send on WhatsApp
               </a>
