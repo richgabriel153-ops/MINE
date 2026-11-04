@@ -32,7 +32,7 @@ const STEPS = [
 
 const POINTS = [
   { icon: Wallet, title: "Free to use", text: "Make as many receipts as you like." },
-  { icon: Lock, title: "Your records stay with you", text: "Saved on your phone. No sign-up, no password." },
+  { icon: Lock, title: "Your records are safe", text: "Saved securely online. Only you and your staff can see them." },
   { icon: CloudOff, title: "Works with poor network", text: "Light and fast. Works offline once installed." },
   { icon: Smartphone, title: "Made for Naija business", text: "₦ amounts, transfer, POS and cash, part payments." },
 ] as const;
@@ -49,8 +49,8 @@ export default function LandingPage() {
           </span>
           InCeipt
         </Link>
-        <Link href="/home" className="text-sm font-semibold text-primary">
-          Open app
+        <Link href="/signin" className="flex min-h-11 items-center text-sm font-semibold text-primary">
+          Log in
         </Link>
       </header>
 
@@ -66,13 +66,13 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="h-16 text-xl sm:px-8">
-                <Link href="/create">
+                <Link href="/signup">
                   Create a receipt <ArrowRight className="size-6" />
                 </Link>
               </Button>
               <InstallButton />
             </div>
-            <p className="text-sm text-muted-foreground">No sign-up. No password. Free.</p>
+            <p className="text-sm text-muted-foreground">Free account. Takes a minute.</p>
           </div>
           <div className="mx-auto w-full max-w-[400px] rotate-[-1.5deg]">
             <ScaledPreview>
@@ -130,7 +130,7 @@ export default function LandingPage() {
           <div className="mx-auto flex max-w-5xl flex-col items-center gap-5 px-4 py-14 text-center">
             <h2 className="text-2xl font-bold md:text-3xl">Your next customer deserves a proper receipt</h2>
             <Button asChild size="lg" variant="secondary" className="h-16 w-full max-w-sm text-xl">
-              <Link href="/create">Create a receipt</Link>
+              <Link href="/signup">Create a receipt</Link>
             </Button>
           </div>
         </section>

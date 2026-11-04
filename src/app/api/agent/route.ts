@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 import { AGENT_TOOLS } from "@/lib/agent/tools";
-import { isPreviewMode } from "@/lib/server/preview";
+import { rateLimit, tooMany } from "@/lib/server/rate-limit";
 import { isServerCloudConfigured, json, memberRole, requestUser, supabaseAdmin } from "@/lib/server/supabase-admin";
 
 export const dynamic = "force-dynamic";
@@ -37,8 +37,6 @@ let client: Anthropic | null = null;
 
 interface Body {
   businessId?: string | null;
-  /** Pro preview on a test link: no account needed (see takePreviewMessage). */
-  preview?: boolean;
   messages?: unknown;
   context?: { today?: string; businessName?: string; userName?: string };
 }
@@ -67,24 +65,6 @@ function withCacheMark(
     content[content.length - 1] = { ...tail, cache_control: { type: "ephemeral" } };
   }
   return [...messages.slice(0, -1), { role: "user", content }];
-}
-
-/**
- * Pro preview (test links only): no account, so limit by IP address and overall, in memory.
- * Resets when the server restarts; enough to stop a test link running up a bill.
- */
-const PREVIEW_PER_IP = 30;
-const PREVIEW_TOTAL = 300;
-const previewUse = new Map<string, number>();
-function takePreviewMessage(ip: string): number | null {
-  const day = new Date().toISOString().slice(0, 10);
-  for (const key of previewUse.keys()) if (!key.startsWith(day)) previewUse.delete(key);
-  const mine = previewUse.get(`${day}|${ip}`) ?? 0;
-  const total = previewUse.get(`${day}|*`) ?? 0;
-  if (mine >= PREVIEW_PER_IP || total >= PREVIEW_TOTAL) return null;
-  previewUse.set(`${day}|${ip}`, mine + 1);
-  previewUse.set(`${day}|*`, total + 1);
-  return PREVIEW_PER_IP - mine - 1;
 }
 
 const clean = (s: unknown, max: number) => (typeof s === "string" ? s.replace(/[\r\n]+/g, " ").slice(0, max) : "");
@@ -116,20 +96,14 @@ export async function POST(request: Request) {
   let usage: { businessId: string } | null = null;
   let remaining: number | null = null;
 
-  if (body.preview && !body.businessId) {
-    if (!isPreviewMode()) return json({ error: "The assistant is part of InCeipt Pro.", code: "pro_required" }, 402);
-    if (typed) {
-      const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
-      remaining = takePreviewMessage(ip);
-      if (remaining === null)
-        return json({ error: "That's the limit for the preview today. Try again tomorrow.", code: "limit" }, 429);
-    }
-  } else {
+  {
     if (!isServerCloudConfigured()) return json({ error: "Accounts aren't set up yet." }, 503);
     const { businessId } = body;
     if (!businessId) return json({ error: "Bad request" }, 400);
     const user = await requestUser(request);
     if (!user) return json({ error: "Please sign in again." }, 401);
+    // Short bursts only (each message can take several rounds); the daily limit is below.
+    if (!(await rateLimit(`agent:${user.id}`, 60, 30))) return tooMany();
     const memberRoleResult = await memberRole(user.id, businessId);
     if (!memberRoleResult) return json({ error: "You don't have access to this business." }, 403);
     role = memberRoleResult;

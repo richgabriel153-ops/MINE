@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<Member["status"], string> = { invited: "Invited", act
 
 function inviteMessage(name: string, business: string, email: string, origin: string): string {
   const hello = name ? `Hi ${name.split(/\s+/)[0]},` : "Hi,";
-  return `${hello} I've added you to ${business || "our business"} on InCeipt so you can make receipts and invoices.\n\nOpen ${origin}/signin?email=${encodeURIComponent(email)} and sign in with ${email}. You'll get a code by email.`;
+  return `${hello} I've added you to ${business || "our business"} on InCeipt so you can make receipts and invoices.\n\nOpen ${origin}/signup?email=${encodeURIComponent(email)} and create your free account with ${email} (or log in if you already have one).`;
 }
 
 export function StaffPanel() {
@@ -165,7 +165,7 @@ export function StaffPanel() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Send them the invite</DialogTitle>
-            <DialogDescription>They join by signing in with {shareFor?.email}. Send this message so they know how:</DialogDescription>
+            <DialogDescription>They join by creating an account (or logging in) with {shareFor?.email}. Send this message so they know how:</DialogDescription>
           </DialogHeader>
           <p className="rounded-lg bg-muted p-3 text-sm whitespace-pre-line">{message}</p>
           <DialogFooter>

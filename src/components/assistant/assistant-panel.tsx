@@ -14,7 +14,6 @@ import { runTool, type RunContext } from "@/lib/agent/run";
 import { parseToolCall, ToolInputError, WRITE_TOOLS, type ParsedTool } from "@/lib/agent/tools";
 import { accessToken } from "@/lib/cloud/client";
 import { lagosDate } from "@/lib/dates";
-import { usePreviewMode } from "@/lib/preview";
 import { getProfile, listDocuments } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
@@ -90,7 +89,6 @@ class AgentError extends Error {
 
 export function AssistantPanel() {
   const { access, showUpgrade } = useAccess();
-  const preview = usePreviewMode();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [cards, setCards] = useState<Record<string, ActionCard>>({});
   const [pending, setPending] = useState<Pending | null>(null);
@@ -144,27 +142,6 @@ export function AssistantPanel() {
         </CardContent>
       </Card>
     );
-  const previewChat = access.mode === "local" && Boolean(preview?.assistantReady);
-  if (access.mode === "local" && !preview) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
-  if (access.mode !== "cloud" && preview?.enabled && !previewChat)
-    return (
-      <p className="rounded-xl border border-dashed border-primary/40 bg-secondary p-4 text-sm">
-        To try the assistant on this test link, add <strong>ANTHROPIC_API_KEY</strong> in Vercel → Settings → Environment
-        Variables (tick <strong>Preview</strong>), then redeploy. Everything else in the Pro preview works without it.
-      </p>
-    );
-  if (access.mode !== "cloud" && !previewChat)
-    return (
-      <Card>
-        <CardContent className="flex flex-col gap-3">
-          <p className="text-sm">The assistant needs a free InCeipt account, so your Pro plan and records are kept safe online.</p>
-          <Button asChild>
-            <Link href="/account?next=%2Fassistant">Sign in or create account</Link>
-          </Button>
-        </CardContent>
-      </Card>
-    );
-
   const runCtx: RunContext = { role: access.role, can: access.can };
 
   async function callServer(msgs: Msg[]): Promise<{ content: Block[]; stop_reason: string | null }> {
@@ -174,7 +151,6 @@ export function AssistantPanel() {
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({
         businessId: access!.cloud?.businessId ?? null,
-        preview: previewChat,
         messages: msgs,
         context: { today: lagosDate(), businessName: business, userName: access!.cloud?.email ?? "" },
       }),

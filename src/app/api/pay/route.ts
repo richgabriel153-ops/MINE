@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { checkPayAmount, isValidEmail } from "@/lib/pay-amount";
 import { invoiceForToken, recordOnlinePayment, subaccountFor } from "@/lib/server/pay-links";
 import { appOrigin, isPaystackConfigured, paystack, PaystackError } from "@/lib/server/paystack";
+import { clientIp, rateLimit, tooMany } from "@/lib/server/rate-limit";
 import { isServerCloudConfigured, json } from "@/lib/server/supabase-admin";
 
 /**
@@ -12,6 +13,7 @@ import { isServerCloudConfigured, json } from "@/lib/server/supabase-admin";
  */
 export async function GET(request: Request) {
   if (!isServerCloudConfigured()) return json({ error: "Online payment isn't available right now." }, 503);
+  if (!(await rateLimit(`pay-get:${clientIp(request)}`, 600, 120))) return tooMany();
   const url = new URL(request.url);
   const token = url.searchParams.get("t") ?? "";
   const reference = url.searchParams.get("reference") ?? url.searchParams.get("trxref");
@@ -40,6 +42,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!isServerCloudConfigured() || !isPaystackConfigured()) return json({ error: "Online payment isn't available right now." }, 503);
+  if (!(await rateLimit(`pay-post:${clientIp(request)}`, 600, 20))) return tooMany();
   let body: { t?: string; email?: string; amountKobo?: number } = {};
   try {
     body = await request.json();

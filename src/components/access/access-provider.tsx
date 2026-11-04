@@ -61,7 +61,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
 
   const pathname = usePathname();
   const preview = usePreviewMode();
-  const showBlocked = access?.blocked && !["/account", "/signin"].includes(pathname);
+  const showBlocked = access?.blocked && pathname !== "/account";
 
   return (
     <AccessContext.Provider value={value}>
