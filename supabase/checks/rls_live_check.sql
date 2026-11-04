@@ -54,8 +54,12 @@ begin
   perform set_config('request.jwt.claim.sub', '', true);
   perform set_config('request.jwt.claims', '', true);
   perform set_config('role', 'anon', true);
-  select count(*) into n from public.documents; r := r || ' | anon_sees_docs=' || n;
-  select count(*) into n from public.businesses; r := r || ' anon_sees_businesses=' || n;
+  begin select count(*) into n from public.documents; r := r || ' | anon_docs=' || n || ' (should be blocked)';
+  exception when insufficient_privilege then r := r || ' | anon_docs=blocked'; end;
+  begin select count(*) into n from public.businesses; r := r || ' anon_businesses=' || n || ' (should be blocked)';
+  exception when insufficient_privilege then r := r || ' anon_businesses=blocked'; end;
+  begin select count(*) into n from public.customers; r := r || ' anon_customers=' || n || ' (should be blocked)';
+  exception when insufficient_privilege then r := r || ' anon_customers=blocked'; end;
   begin perform public.export_my_data(); r := r || ' anon_export=ALLOWED!';
   exception when others then r := r || ' anon_export=blocked'; end;
 

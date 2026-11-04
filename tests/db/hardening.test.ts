@@ -190,4 +190,13 @@ describe("beta hardening", () => {
     const still = await one<{ n: string }>(db, "select count(*) as n from public.businesses where id = $1", [bid2]);
     expect(Number(still.n)).toBe(1);
   });
+
+  it("logged-out visitors have no access at all", async () => {
+    await as(db, null);
+    for (const t of ["documents", "businesses", "customers", "payments", "members", "business_billing", "expenses", "beta_codes"]) {
+      await expect(db.query(`select count(*) from public.${t}`)).rejects.toThrow(/permission denied/);
+    }
+    await expect(db.query("select public.export_my_data()")).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.member_role(gen_random_uuid())")).rejects.toThrow(/permission denied/);
+  });
 });
