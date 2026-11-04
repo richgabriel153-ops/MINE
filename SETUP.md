@@ -188,7 +188,7 @@ access rules and database functions. Expense photos are files, not database rows
    psql --single-transaction --variable ON_ERROR_STOP=1 \
      --file backup/roles.sql --file backup/schema.sql \
      --command 'SET session_replication_role = replica' \
-     --file backup/auth-data.sql --file backup/data.sql \
+     --file backup/data.sql \
      --dbname "$NEW_DB_URL"
    ```
 4. Point the app at the new project (the three Supabase values in Vercel) and redeploy.
