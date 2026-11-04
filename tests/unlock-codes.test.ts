@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 import { isValidUnlockCode, parseCodeList } from "@/lib/unlock-codes";
 
 const ENV = " NAIJA-PRO-1234 , second-code,, x ";
