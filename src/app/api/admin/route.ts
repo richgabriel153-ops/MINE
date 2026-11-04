@@ -23,7 +23,13 @@ export async function GET(request: Request) {
   if (view === "overview") {
     const { data, error } = await db.rpc("admin_overview");
     if (error) return json({ error: error.message }, 500);
-    return json({ overview: data, model: process.env.AGENT_MODEL || null });
+    // App problems testers hit (empty until the client_errors migration is run).
+    const errs = await db
+      .from("client_errors")
+      .select("id, created_at, kind, message, page, app_version, user_agent")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    return json({ overview: { ...data, app_errors: errs.error ? [] : errs.data }, model: process.env.AGENT_MODEL || null });
   }
   if (view === "businesses") {
     const q = (url.searchParams.get("q") ?? "").slice(0, 100);

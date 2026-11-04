@@ -158,13 +158,14 @@ function CustomerDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [docs, setDocs] = useState<DocumentRecord[] | null>(customer ? null : []);
+  const [docsError, setDocsError] = useState(false);
 
   useEffect(() => {
     if (!customer) return;
     let active = true;
     customerDocuments(customer.id)
       .then((d) => active && setDocs(d))
-      .catch(() => active && setDocs([]));
+      .catch(() => active && setDocsError(true));
     return () => {
       active = false;
     };
@@ -240,7 +241,11 @@ function CustomerDialog({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {docs === null ? (
+            {docsError ? (
+              <p role="alert" className="text-sm">
+                Couldn&apos;t load this customer&apos;s receipts and invoices. Check your internet connection and open them again.
+              </p>
+            ) : docs === null ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : (
               <>

@@ -217,4 +217,16 @@ describe("beta hardening", () => {
     );
     expect(doc.number).toMatch(/^RCT-\d{4}$/);
   });
+
+  it("app problem reports are hidden from everyone but the server", async () => {
+    await as(db, other);
+    await expect(db.query("select count(*) from public.client_errors")).rejects.toThrow(/permission denied/);
+    await expect(db.query("insert into public.client_errors (message) values ('x')")).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public._prune_client_errors()")).rejects.toThrow(/permission denied/);
+    await asService(db);
+    await db.query("insert into public.client_errors (message, created_at) values ('old', now() - interval '40 days'), ('new', now())");
+    await db.query("select public._prune_client_errors()");
+    const left = await db.query<{ message: string }>("select message from public.client_errors");
+    expect(left.rows.map((r) => r.message)).toEqual(["new"]);
+  });
 });

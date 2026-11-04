@@ -8,39 +8,60 @@ import { useAccess } from "@/components/access/access-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate, lagosDate, startOfMonth } from "@/lib/dates";
-import { getExpenseCategories, listExpenses } from "@/lib/db";
+import { expensesSince, getExpenseCategories, listExpensesPage } from "@/lib/db";
 import type { Expense } from "@/lib/expenses";
 import { monthLabel } from "@/lib/history-filter";
 import { formatNaira } from "@/lib/money";
 import { ExpenseForm } from "./expense-form";
+
+const PAGE = 50;
+
+const firstLoad = () => Promise.all([listExpensesPage(0, PAGE), expensesSince(startOfMonth(lagosDate())), getExpenseCategories()]);
 
 export function ExpensesPanel() {
   const { access, showUpgrade } = useAccess();
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
   const [custom, setCustom] = useState<string[]>([]);
   const [editing, setEditing] = useState<Expense | null | "new">(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [thisMonth, setThisMonth] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const allowed = access?.role === "owner";
 
-  const load = useCallback(async () => {
-    const [e, c] = await Promise.all([listExpenses(), getExpenseCategories()]);
-    setExpenses(e);
+  /** First page, this month's total and the categories. */
+  const apply = useCallback(([page, month, c]: Awaited<ReturnType<typeof firstLoad>>) => {
+    setExpenses(page.expenses);
+    setHasMore(page.hasMore);
+    setThisMonth(month);
     setCustom(c);
+    setError(null);
   }, []);
+  const load = useCallback(() => firstLoad().then(apply), [apply]);
 
   useEffect(() => {
     if (!allowed) return;
     let active = true;
-    Promise.all([listExpenses(), getExpenseCategories()])
-      .then(([e, c]) => {
-        if (!active) return;
-        setExpenses(e);
-        setCustom(c);
-      })
-      .catch(() => active && setExpenses([]));
+    firstLoad()
+      .then((r) => active && apply(r))
+      .catch((e: unknown) => active && setError(e instanceof Error ? e.message : "Couldn't load your expenses."));
     return () => {
       active = false;
     };
-  }, [allowed]);
+  }, [allowed, apply]);
+
+  const more = async () => {
+    setLoadingMore(true);
+    try {
+      const page = await listExpensesPage(expenses?.length ?? 0, PAGE);
+      setExpenses((prev) => [...(prev ?? []), ...page.expenses]);
+      setHasMore(page.hasMore);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't load more.");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const groups = useMemo(() => {
     const g: { key: string; label: string; total: number; items: Expense[] }[] = [];
@@ -55,10 +76,16 @@ export function ExpensesPanel() {
     return g;
   }, [expenses]);
 
-  if (!access) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
+  if (!access)
+    return (
+      <ul className="flex flex-col gap-2" aria-busy="true" aria-label="Loading">
+        {Array.from({ length: 4 }, (_, i) => (
+          <li key={i} className="h-14 animate-pulse rounded-xl bg-muted" />
+        ))}
+      </ul>
+    );
   if (!allowed) return <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">Only the business owner can see expenses.</p>;
 
-  const thisMonth = (expenses ?? []).filter((e) => e.date >= startOfMonth(lagosDate())).reduce((s, e) => s + e.amountKobo, 0);
   const add = () => (access.can.expenses ? setEditing("new") : showUpgrade("Expense tracking"));
 
   return (
@@ -67,7 +94,7 @@ export function ExpensesPanel() {
         <Card>
           <CardContent className="py-3">
             <div className="text-xs text-muted-foreground">Spent this month</div>
-            <div className="text-xl font-bold amount">{formatNaira(thisMonth)}</div>
+            <div className="text-xl font-bold amount">{thisMonth === null ? "…" : formatNaira(thisMonth)}</div>
           </CardContent>
         </Card>
         <Button size="lg" onClick={add}>
@@ -85,8 +112,19 @@ export function ExpensesPanel() {
         </p>
       )}
 
-      {expenses === null ? (
-        <p className="py-6 text-center text-muted-foreground">Loading…</p>
+      {error && expenses === null ? (
+        <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border p-6 text-center">
+          <p>Couldn&apos;t load your expenses. {error}</p>
+          <Button variant="outline" onClick={() => void load().catch(() => {})}>
+            Try again
+          </Button>
+        </div>
+      ) : expenses === null ? (
+        <ul className="flex flex-col gap-2" aria-busy="true" aria-label="Loading">
+          {Array.from({ length: 4 }, (_, i) => (
+            <li key={i} className="h-14 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </ul>
       ) : expenses.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-8 text-center">
           <p className="text-muted-foreground">Log what you spend on stock, transport, fuel, rent and more to see your real profit.</p>
@@ -95,11 +133,12 @@ export function ExpensesPanel() {
           </Button>
         </div>
       ) : (
-        groups.map((g) => (
+        groups.map((g, i) => (
           <section key={g.key} className="flex flex-col gap-2">
             <h2 className="flex justify-between text-sm font-semibold text-muted-foreground">
               <span>{g.label}</span>
-              <span className="amount">{formatNaira(g.total)}</span>
+              {/* The last month may continue on the next page, so its total would be short. */}
+              {!(hasMore && i === groups.length - 1) && <span className="amount">{formatNaira(g.total)}</span>}
             </h2>
             {g.items.map((e) => (
               <button
@@ -122,6 +161,11 @@ export function ExpensesPanel() {
             ))}
           </section>
         ))
+      )}
+      {hasMore && (
+        <Button variant="outline" size="lg" onClick={() => void more()} disabled={loadingMore}>
+          {loadingMore ? "Loading…" : "Load more"}
+        </Button>
       )}
 
       {editing !== null && (

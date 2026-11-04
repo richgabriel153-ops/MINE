@@ -25,25 +25,44 @@ import type { BusinessProfile, DocumentRecord, TemplateId } from "@/lib/types";
 type Loaded =
   | { state: "loading" }
   | { state: "missing" }
+  | { state: "error"; message: string }
   | { state: "ready"; doc: DocumentRecord; profile: BusinessProfile };
 
 export function ViewLoader() {
   const id = useSearchParams().get("id");
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
-    (async () => {
-      const [doc, profile] = await Promise.all([id ? getDocument(id) : undefined, getProfile()]);
-      if (active) setLoaded(doc ? { state: "ready", doc, profile } : { state: "missing" });
-    })();
+    Promise.all([id ? getDocument(id) : undefined, getProfile()])
+      .then(([doc, profile]) => active && setLoaded(doc ? { state: "ready", doc, profile } : { state: "missing" }))
+      .catch((e: unknown) => active && setLoaded({ state: "error", message: e instanceof Error ? e.message : "Please try again." }));
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   const { access } = useAccess();
   if (loaded.state === "loading" || !access) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
+
+  if (loaded.state === "error")
+    return (
+      <>
+        <PageHeader title="Couldn't open" backHref="/history" />
+        <div role="alert" className="flex flex-col items-center gap-4 py-10 text-center">
+          <p>We couldn&apos;t open this record. {loaded.message}</p>
+          <Button
+            onClick={() => {
+              setLoaded({ state: "loading" });
+              setAttempt((n) => n + 1);
+            }}
+          >
+            Try again
+          </Button>
+        </div>
+      </>
+    );
 
   if (loaded.state === "missing")
     return (

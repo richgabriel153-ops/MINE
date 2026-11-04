@@ -30,6 +30,8 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Which version of the app a tester was using, shown next to any error they hit.
+  env: { NEXT_PUBLIC_APP_VERSION: (process.env.VERCEL_GIT_COMMIT_SHA ?? "local").slice(0, 7) },
   async headers() {
     return [
       {

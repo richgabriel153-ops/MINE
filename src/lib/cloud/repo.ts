@@ -176,14 +176,7 @@ export interface MyAccess {
 
 /** Add a Pay Now link to an invoice; returns the link code. */
 export async function createPayLink(documentId: string): Promise<string> {
-  try {
-    return await call<string>("create_pay_link", { p_doc_id: documentId });
-  } catch (err) {
-    const m = err instanceof Error ? err.message : "";
-    if (/payouts_not_connected/.test(m)) throw new Error("Online payments aren't set up for this business yet.");
-    if (/nothing_to_pay/.test(m)) throw new Error("This invoice is already fully paid.");
-    throw err;
-  }
+  return call<string>("create_pay_link", { p_doc_id: documentId });
 }
 
 export async function myAccess(businessId: string): Promise<MyAccess> {
@@ -212,14 +205,7 @@ export async function listMembers(businessId: string): Promise<Member[]> {
 }
 
 export async function inviteStaff(businessId: string, email: string, name: string): Promise<void> {
-  try {
-    await call("invite_staff", { bid: businessId, p_email: email, p_name: name });
-  } catch (err) {
-    const m = err instanceof Error ? err.message : "";
-    if (/bad_email/.test(m)) throw new Error("That email address doesn't look right.");
-    if (/is_owner/.test(m)) throw new Error("That's the owner's email.");
-    throw err;
-  }
+  await call("invite_staff", { bid: businessId, p_email: email, p_name: name });
 }
 
 export async function setStaffActive(memberId: string, active: boolean): Promise<void> {
@@ -304,6 +290,27 @@ export async function listExpenses(businessId: string): Promise<Expense[]> {
     .order("created_at", { ascending: false });
   if (error) throw friendlyError(error);
   return (data as ExpenseRow[]).map(rowToExpense);
+}
+
+/** Expenses newest first, a page at a time. */
+export async function listExpensesPage(businessId: string, offset: number, limit: number): Promise<{ expenses: Expense[]; hasMore: boolean }> {
+  const { data, error } = await supabase()
+    .from("expenses")
+    .select("*")
+    .eq("business_id", businessId)
+    .order("spent_on", { ascending: false })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit); // one extra row tells us if there's more
+  if (error) throw friendlyError(error);
+  const rows = (data as ExpenseRow[]).map(rowToExpense);
+  return { expenses: rows.slice(0, limit), hasMore: rows.length > limit };
+}
+
+/** Total spent from this date on (just the amounts, so it stays small). */
+export async function expensesSince(businessId: string, from: string): Promise<number> {
+  const { data, error } = await supabase().from("expenses").select("amount_kobo").eq("business_id", businessId).gte("spent_on", from);
+  if (error) throw friendlyError(error);
+  return (data as { amount_kobo: number | string }[]).reduce((s, r) => s + Number(r.amount_kobo), 0);
 }
 
 const PHOTO_BUCKET = "expense-photos";

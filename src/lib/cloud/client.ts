@@ -7,11 +7,31 @@ export function isCloudConfigured(): boolean {
 
 let client: SupabaseClient | null = null;
 
+/** How long to wait on a slow connection before giving up (photo uploads get longer). */
+export const REQUEST_TIMEOUT_MS = 30_000;
+export const UPLOAD_TIMEOUT_MS = 90_000;
+
+/** fetch that gives up after a while, so a bad network shows a message instead of spinning forever. */
+export const fetchWithTimeout: typeof fetch = (input, init) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  const ms = url.includes("/storage/v1/") ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+  // Built by hand (not AbortSignal.timeout/any) so it also works on older phone browsers.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new DOMException("Request timed out", "TimeoutError")), ms);
+  const outer = init?.signal;
+  if (outer) {
+    if (outer.aborted) controller.abort(outer.reason);
+    else outer.addEventListener("abort", () => controller.abort(outer.reason), { once: true });
+  }
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+};
+
 /** The browser's Supabase client (uses the public anon key; access is controlled by database rules). */
 export function supabase(): SupabaseClient {
   if (!isCloudConfigured()) throw new Error("Accounts aren't set up yet.");
   client ??= createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: "inceipt-auth" },
+    global: { fetch: fetchWithTimeout },
   });
   return client;
 }
@@ -31,11 +51,25 @@ export function friendlyError(err: unknown): Error {
   if (/not_member/.test(message)) return new Error("You no longer have access to this business.");
   if (/already_paid/.test(message)) return new Error("This invoice has already been marked as paid.");
   if (/bad_amount/.test(message)) return new Error("That amount is more than what's left to pay.");
+  if (/already_converted/.test(message)) return new Error("This quote has already been turned into an invoice.");
+  if (/payouts_not_connected/.test(message)) return new Error("Online payments aren't set up for this business yet.");
+  if (/nothing_to_pay/.test(message)) return new Error("This invoice is already fully paid.");
+  if (/bad_email/.test(message)) return new Error("That email address doesn't look right.");
+  if (/is_owner/.test(message)) return new Error("That's the owner's email.");
+  if (/bad_categories/.test(message)) return new Error("Check the expense categories (short names, no duplicates).");
+  if (/bad_status|bad_type/.test(message)) return new Error("That change isn't allowed for this record.");
+  if (/not_found/.test(message)) return new Error("We couldn't find that record. It may have been deleted.");
+  if (/not_signed_in|JWT expired|invalid JWT/i.test(message)) return new Error("Please log in again to continue.");
   const bad = /invalid_input:([a-z_]+)/.exec(message);
   if (bad) return new Error(INVALID_INPUT[bad[1]] ?? "Something in this form isn't right. Please check it and try again.");
   if (/rate_limited/.test(message)) return new Error("Too many tries. Please wait a little and try again.");
-  if (/Failed to fetch|NetworkError|network/i.test(message)) return new Error("No internet connection. Please try again when you're back online.");
-  return new Error(message || "Something went wrong. Please try again.");
+  if (/timed? ?out|timeout|aborted/i.test(message))
+    return new Error("This is taking too long; your connection may be slow. If you were saving, check History before trying again.");
+  if (/Failed to fetch|NetworkError|network|Load failed/i.test(message)) return new Error("No internet connection. Please try again when you're back online.");
+  // Other database or server errors: don't show their technical wording to people.
+  const fromServer = typeof err === "object" && err !== null && ("code" in err || "status" in err || "hint" in err);
+  if (fromServer || !message) return new Error("Something went wrong on our side. Please try again in a moment.");
+  return new Error(message);
 }
 
 /** Plain-English messages for the server's input checks (invalid_input:<field>). */

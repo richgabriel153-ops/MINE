@@ -44,6 +44,8 @@ interface Overview {
   assistant_output_tokens_30d: number;
   webhooks_7d: number;
   webhook_errors: { id: string; event: string; error: string; received_at: string }[];
+  /** Problems testers hit in the app (newest first). */
+  app_errors?: { id: number; created_at: string; kind: string; message: string; page: string; app_version: string; user_agent: string }[];
   signups_by_day: { day: string; count: number }[];
 }
 
@@ -317,6 +319,29 @@ export function AdminPanel() {
       </section>
 
       <section className="flex flex-col gap-2">
+        <h2 className="font-semibold">App problems</h2>
+        {(o.app_errors ?? []).length === 0 ? (
+          <p className="rounded-xl border p-4 text-sm text-muted-foreground">No problems reported in the last 30 days.</p>
+        ) : (
+          <Card className="border-warning/40">
+            <CardContent className="flex flex-col gap-2 text-sm">
+              {(o.app_errors ?? []).map((e) => (
+                <div key={e.id} className="border-t pt-2 first:border-t-0 first:pt-0">
+                  <div className="font-medium">
+                    {e.page || "(unknown page)"} · {day(e.created_at)}
+                  </div>
+                  <div className="break-words">{e.message}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {e.kind} · version {e.app_version || "?"} · {shortDevice(e.user_agent)}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
         <h2 className="font-semibold">Paystack webhooks</h2>
         <Stat label="Received this week" value={n(o.webhooks_7d)} />
         {o.webhook_errors.length > 0 && (
@@ -515,3 +540,11 @@ const SAMPLE_ROWS: BusinessRow[] = [
     is_pro: true,
   }),
 ];
+
+/** "Mozilla/5.0 (Linux; Android 12; TECNO KG5) ... Chrome/120" -> "Android 12 · Chrome 120" */
+function shortDevice(ua: string): string {
+  const os = /Android [\d.]+|iPhone OS [\d_]+|Windows NT [\d.]+|Mac OS X [\d_]+/.exec(ua)?.[0]?.replace(/_/g, ".") ?? "";
+  const browser = /(Chrome|Firefox|Version)\/(\d+)/.exec(ua);
+  const b = browser ? `${browser[1] === "Version" ? "Safari" : browser[1]} ${browser[2]}` : "";
+  return [os, b].filter(Boolean).join(" · ") || "unknown device";
+}

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 
+import { ErrorListener } from "@/components/errors/error-listener";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <Toaster />
         <ServiceWorker />
+        <ErrorListener />
       </body>
     </html>
   );

@@ -135,6 +135,16 @@ export async function listExpenses(): Promise<Expense[]> {
   return withOfflineCopy(key(c, "expenses"), () => cloud.listExpenses(c.businessId));
 }
 
+export async function listExpensesPage(offset: number, limit: number): Promise<{ expenses: Expense[]; hasMore: boolean }> {
+  const c = await ctx();
+  return withOfflineCopy(key(c, `expenses-page-${offset}-${limit}`), () => cloud.listExpensesPage(c.businessId, offset, limit));
+}
+
+export async function expensesSince(from: string): Promise<number> {
+  const c = await ctx();
+  return withOfflineCopy(key(c, `expenses-since-${from}`), () => cloud.expensesSince(c.businessId, from));
+}
+
 /** `photo`: a compressed JPEG to attach, null to remove, undefined to keep. */
 export async function saveExpense(id: string | null, draft: ExpenseDraft, photo?: Blob | null): Promise<Expense> {
   const c = await ctx();

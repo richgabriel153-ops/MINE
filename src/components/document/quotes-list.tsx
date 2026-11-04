@@ -6,7 +6,7 @@ import { ChevronRight, FileText, Plus } from "lucide-react";
 
 import { useAccess } from "@/components/access/access-provider";
 import { Button } from "@/components/ui/button";
-import { useDocuments } from "@/hooks/use-documents";
+import { usePagedDocuments } from "@/hooks/use-paged-documents";
 import { formatDate, lagosDate } from "@/lib/dates";
 import { formatNaira } from "@/lib/money";
 import { QUOTE_STATUS_LABEL, quoteStatus, type QuoteDisplayStatus } from "@/lib/quotes";
@@ -17,13 +17,30 @@ const FILTERS: ("all" | QuoteDisplayStatus)[] = ["all", "draft", "sent", "accept
 
 export function QuotesList() {
   const { access, showUpgrade } = useAccess();
-  const { docs } = useDocuments();
+  // Only quotes are fetched, 30 at a time.
+  const { docs, hasMore, loadMore, loadingMore, error, reload } = usePagedDocuments({ type: "quote" });
   const [filter, setFilter] = useState<"all" | QuoteDisplayStatus>("all");
   const today = lagosDate();
-  const quotes = useMemo(() => (docs ?? []).filter((d) => d.type === "quote").map((d) => ({ doc: d, status: quoteStatus(d, today) })), [docs, today]);
+  const quotes = useMemo(() => (docs ?? []).map((d) => ({ doc: d, status: quoteStatus(d, today) })), [docs, today]);
   const shown = filter === "all" ? quotes : quotes.filter((q) => q.status === filter);
 
-  if (!access || docs === null) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
+  if (error && docs === null)
+    return (
+      <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border p-6 text-center">
+        <p>Couldn&apos;t load your quotes. {error}</p>
+        <Button variant="outline" onClick={() => void reload()}>
+          Try again
+        </Button>
+      </div>
+    );
+  if (!access || docs === null)
+    return (
+      <ul className="flex flex-col gap-2" aria-busy="true" aria-label="Loading">
+        {Array.from({ length: 5 }, (_, i) => (
+          <li key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+        ))}
+      </ul>
+    );
 
   const newButton = access.can.quotes ? (
     <Button asChild size="lg">
@@ -98,6 +115,11 @@ export function QuotesList() {
             </li>
           ))}
         </ul>
+      )}
+      {hasMore && (
+        <Button variant="outline" size="lg" onClick={() => void loadMore()} disabled={loadingMore}>
+          {loadingMore ? "Loading…" : "Load more"}
+        </Button>
       )}
     </div>
   );

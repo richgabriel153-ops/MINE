@@ -46,7 +46,7 @@ export async function cacheClear(): Promise<void> {
 /** True for "no internet" style failures (not for "you're not allowed"). */
 export function isNetworkError(err: unknown): boolean {
   const m = err instanceof Error ? err.message : String(err);
-  return /failed to fetch|networkerror|network request failed|load failed|no internet|offline|timed? ?out/i.test(m) ||
+  return /failed to fetch|networkerror|network request failed|load failed|no internet|offline|timed? ?out|timeout|aborted/i.test(m) ||
     (typeof navigator !== "undefined" && navigator.onLine === false);
 }
 

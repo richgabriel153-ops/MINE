@@ -34,6 +34,8 @@ interface Data {
 export function ProfitPanel() {
   const { access, showUpgrade } = useAccess();
   const [data, setData] = useState<Data | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [period, setPeriod] = useState<PeriodKey>("month");
   const today = lagosDate();
   const [custom, setCustom] = useState<Range>({ from: today.slice(0, 8) + "01", to: today });
@@ -46,11 +48,12 @@ export function ProfitPanel() {
       .then(([sales, expenses, docs]) => {
         if (active) setData({ sales, expenses, owingKobo: docs.reduce((s, d) => s + owingKobo(d), 0) });
       })
-      .catch(() => active && setData({ sales: [], expenses: [], owingKobo: 0 }));
+      // Never show ₦0 profit just because the records didn't load.
+      .catch((e: unknown) => active && setLoadError(e instanceof Error ? e.message : "Please try again."));
     return () => {
       active = false;
     };
-  }, [allowed]);
+  }, [allowed, attempt]);
 
   const range = period === "custom" ? (custom.from <= custom.to ? custom : { from: custom.to, to: custom.from }) : rangeFor(period, today);
   const expenseAmounts = useMemo(() => (data?.expenses ?? []).map((e) => ({ date: e.date, amountKobo: e.amountKobo, category: e.category })), [data]);
@@ -68,6 +71,21 @@ export function ProfitPanel() {
           <Button onClick={() => showUpgrade("Profit")}>See Pro</Button>
         </CardContent>
       </Card>
+    );
+  if (loadError && !data)
+    return (
+      <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border p-6 text-center">
+        <p>Couldn&apos;t load your sales and expenses. {loadError}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setLoadError(null);
+            setAttempt((n) => n + 1);
+          }}
+        >
+          Try again
+        </Button>
+      </div>
     );
   if (!data || !summary) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
 

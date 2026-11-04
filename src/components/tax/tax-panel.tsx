@@ -54,6 +54,8 @@ function Line({ label, value, strong, muted }: { label: string; value: string; s
 export function TaxPanel() {
   const { access, showUpgrade } = useAccess();
   const [data, setData] = useState<Data | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [profile, setProfile] = useState<TaxProfile | null>(null);
   const today = lagosDate();
   const [year, setYear] = useState(Number(today.slice(0, 4)));
@@ -69,11 +71,11 @@ export function TaxPanel() {
         setProfile(loadTaxProfile());
         setData({ sales, expenses, outputVat: outputVatFromDocuments(docs), businessName: business.name });
       })
-      .catch(() => active && toast.error("Couldn't load your records. Please try again."));
+      .catch((e: unknown) => active && setLoadError(e instanceof Error ? e.message : "Please try again."));
     return () => {
       active = false;
     };
-  }, [allowed]);
+  }, [allowed, attempt]);
 
   const update = (patch: Partial<TaxProfile>) => {
     setProfile((p) => {
@@ -112,6 +114,21 @@ export function TaxPanel() {
           <Button onClick={() => showUpgrade("Tax")}>See Pro</Button>
         </CardContent>
       </Card>
+    );
+  if (loadError && !data)
+    return (
+      <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border p-6 text-center">
+        <p>Couldn&apos;t load your records for the tax estimate. {loadError}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setLoadError(null);
+            setAttempt((n) => n + 1);
+          }}
+        >
+          Try again
+        </Button>
+      </div>
     );
   if (!data || !profile || !report) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
 
