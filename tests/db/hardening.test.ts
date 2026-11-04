@@ -199,4 +199,22 @@ describe("beta hardening", () => {
     await expect(db.query("select public.export_my_data()")).rejects.toThrow(/permission denied/);
     await expect(db.query("select public.member_role(gen_random_uuid())")).rejects.toThrow(/permission denied/);
   });
+
+  it("signed-in users can't call internal helpers directly", async () => {
+    await as(db, other);
+    await expect(db.query("select public._next_number($1, 'receipt')", [bid])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public._log($1, 'x', 'y', null, 'fake')", [bid])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public._require_owner($1)", [bid])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public._sync_document(gen_random_uuid())")).rejects.toThrow(/permission denied/);
+    // The app's own functions still work (they use the helpers inside).
+    const fresh = await makeUser(db, "fresh@shop.ng");
+    await as(db, fresh);
+    const fbid = (await one<{ id: string }>(db, "select public.create_business('{\"name\":\"Fresh\"}', 'F') as id")).id;
+    const doc = await one<{ number: string }>(
+      db,
+      "select public.create_document($1, $2::jsonb, 0, 0) ->> 'number' as number",
+      [fbid, JSON.stringify({ type: "receipt", issueDate: "2026-11-04", dueDate: null, customer: { name: "Bisi", phone: "" }, items: [{ id: "a", description: "Gele", quantity: 1, unitPriceKobo: 500000 }], discount: null, deliveryKobo: 0, vatEnabled: false, status: "paid", amountPaidKobo: 0, method: "cash", notes: "", templateId: "classic" })],
+    );
+    expect(doc.number).toMatch(/^RCT-\d{4}$/);
+  });
 });
