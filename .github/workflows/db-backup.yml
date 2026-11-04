@@ -45,8 +45,6 @@ jobs:
           supabase db dump --db-url "$DB_URL" -f backup/roles.sql --role-only
           supabase db dump --db-url "$DB_URL" -f backup/schema.sql
           supabase db dump --db-url "$DB_URL" -f backup/data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
-          # Login accounts live in the auth schema, which the default dump skips.
-          supabase db dump --db-url "$DB_URL" -f backup/auth-data.sql --use-copy --data-only --schema auth
           ls -l backup
           test -s backup/schema.sql
 
