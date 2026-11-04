@@ -45,3 +45,17 @@ describe("billingSummary", () => {
     expect(billingSummary({ isPro: false, proSource: null }, now).title).toBe("Free");
   });
 });
+
+describe("configurable prices", () => {
+  it("reads whole naira from a setting, with safe defaults", async () => {
+    const { priceKobo, PLANS } = await import("@/lib/billing");
+    expect(priceKobo(undefined, 3000)).toBe(300_000);
+    expect(priceKobo("3500", 3000)).toBe(350_000);
+    expect(priceKobo("3500.50", 3000)).toBe(300_000);
+    expect(priceKobo("-1", 3000)).toBe(300_000);
+    expect(priceKobo("abc", 3000)).toBe(300_000);
+    expect(priceKobo("99999999", 3000)).toBe(300_000);
+    expect(PLANS.monthly.kobo).toBe(300_000);
+    expect(PLANS.yearly.kobo).toBe(2_800_000);
+  });
+});

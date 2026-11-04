@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { checkPayAmount, isValidEmail } from "@/lib/pay-amount";
 import { invoiceForToken, recordOnlinePayment, subaccountFor } from "@/lib/server/pay-links";
 import { appOrigin, isPaystackConfigured, paystack, PaystackError } from "@/lib/server/paystack";
+import { PAYMENTS_ENABLED } from "@/lib/billing";
 import { clientIp, rateLimit, tooMany } from "@/lib/server/rate-limit";
 import { isServerCloudConfigured, json } from "@/lib/server/supabase-admin";
 
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!isServerCloudConfigured() || !isPaystackConfigured()) return json({ error: "Online payment isn't available right now." }, 503);
+  if (!PAYMENTS_ENABLED) return json({ error: "Online payment isn't available yet. Please pay the business directly." }, 503);
   if (!(await rateLimit(`pay-post:${clientIp(request)}`, 600, 20))) return tooMany();
   let body: { t?: string; email?: string; amountKobo?: number } = {};
   try {

@@ -3,8 +3,8 @@
 Everything below is done once, in your own Supabase, Paystack and Vercel dashboards.
 Never paste secret keys into the code or a chat. Put them only in **Vercel → Project → Settings → Environment Variables**.
 
-Until these are set, the app still works as before (records on the phone, unlock codes). Accounts,
-subscriptions, Pay Now links and staff switch on once the keys are added and the app is redeployed.
+InCeipt needs an account: every record is stored in Supabase, protected by row-level security so each
+business only ever sees its own data. Real payments are **off** until you switch them on (section 3).
 
 ---
 
@@ -20,22 +20,26 @@ subscriptions, Pay Now links and staff switch on once the keys are added and the
    5. `20261001000500_expenses.sql` (also creates the private `expense-photos` storage bucket)
    6. `20261001000600_quotes.sql`
    7. `20261001000700_admin_assistant.sql` (assistant usage limits and the admin dashboard)
+   8. `20261104000800_beta_hardening.sql` (server-side totals and checks, customers, beta codes, data export, rate limits)
+   9. `20261104000900_lock_anon.sql` (logged-out visitors get no access at all; shows a small table: all `false`)
+
+   To check privacy at any time, run `supabase/checks/rls_live_check.sql`: it undoes itself and ends with a red
+   "TEST RESULT (rolled back)" message where every `B_…` number is 0 and everything else says `blocked`.
 
    (Or with the Supabase CLI: `supabase link --project-ref <ref>` then `supabase db push`.)
-3. **Email sign-in with a 6-digit code.** Go to **Authentication → Sign In / Providers → Email**: keep Email on,
-   turn **Confirm email** on. Then **Authentication → Emails → Magic Link** template: make sure the email shows the
-   code, for example:
-
-   ```html
-   <h2>Your InCeipt code</h2>
-   <p>Enter this code to sign in: <strong>{{ .Token }}</strong></p>
-   ```
-
-   Do the same for the **Confirm signup** template (new users get this one first).
-4. **Authentication → URL Configuration**: set **Site URL** to your live address (e.g. `https://inceipt.app`)
-   and add your preview address (`https://mine-git-dev-jjjj-e73e.vercel.app`) under **Redirect URLs**.
-5. Supabase's built-in email is limited to a few emails per hour. Before launch, add your own SMTP
-   (Authentication → Emails → SMTP Settings), e.g. Resend, Brevo or Zoho.
+3. **Login (email + password, with 6-digit codes).** **Authentication → Sign In / Providers → Email**: Email on,
+   **Confirm email** on, **Minimum password length 8**, **Password requirements: letters and digits**.
+   Then **Authentication → Emails → Templates**: each of these must show the code `{{ .Token }}`:
+   - **Confirm signup**: `<p>Your InCeipt code is: <strong>{{ .Token }}</strong></p>`
+   - **Magic Link** (code login): `<p>Your InCeipt login code is: <strong>{{ .Token }}</strong></p>`
+   - **Reset Password**: `<p>Your InCeipt password reset code is: <strong>{{ .Token }}</strong></p>`
+4. **Authentication → URL Configuration**: set **Site URL** to your app's address (for now
+   `https://mine-git-dev-jjjj-e73e.vercel.app`; change it when you add a domain).
+5. **Email sending (required for testers).** Supabase's built-in email only sends to members of your Supabase team
+   and only a few per hour. Add your own: **Authentication → Emails → SMTP Settings**. Easiest free option without a
+   domain: Gmail (host `smtp.gmail.com`, port `587`, your Gmail address, and a Gmail *App password* from Google
+   Account → Security → 2-Step Verification → App passwords; about 500 emails a day). Brevo (300/day) also works.
+   **Authentication → Rate Limits**: keep the defaults (they slow down repeated logins and sign-ups).
 6. Copy the keys from **Project Settings → API** into Vercel (table below).
 
 ## 2. Paystack (subscriptions and Pay Now)
@@ -75,7 +79,10 @@ Add each one under **Settings → Environment Variables**, tick **Production** a
 | `PAYSTACK_PLAN_YEARLY` | Paystack → Plans → InCeipt Pro Yearly → plan code `PLN_…` | No |
 | `NEXT_PUBLIC_APP_URL` | Optional. Your live address, e.g. `https://inceipt.app` (used for Paystack return links) | No |
 | `PAYSTACK_PLATFORM_FEE_PERCENT` | Optional. Your cut of Pay Now payments, e.g. `1` for 1%. Default 0 | No |
-| `PRO_UNLOCK_CODES` | Keep your existing early-supporter codes so they stay honoured | **Yes** |
+| `PRO_UNLOCK_CODES` | Optional. Old early-supporter codes, comma separated (beta codes now live in Supabase, below) | **Yes** |
+| `NEXT_PUBLIC_PAYMENTS_ENABLED` | Leave **unset** during the beta (no one can be charged; Pay Now links hidden). Set `on` when you're ready to take real payments | No |
+| `NEXT_PUBLIC_PRICE_MONTHLY_NAIRA` | Optional. Monthly Pro price in whole naira. Default `3000`. Must match your Paystack monthly plan | No |
+| `NEXT_PUBLIC_PRICE_YEARLY_NAIRA` | Optional. Yearly Pro price in whole naira. Default `28000`. Must match your Paystack yearly plan | No |
 | `ADMIN_EMAILS` | Your email(s) for the admin dashboard, comma separated, e.g. `you@gmail.com` | Keep private |
 | `ANTHROPIC_API_KEY` | <https://console.anthropic.com> → Settings → API Keys → Create key (add billing credit first) | **Yes** |
 | `NEXT_PUBLIC_LEGAL_NAME` | Your registered business name, exactly as on CAC (e.g. `InCeipt Technologies Ltd`). Shown on Terms, Privacy and Refund pages | No (public) |
@@ -88,6 +95,17 @@ Add each one under **Settings → Environment Variables**, tick **Production** a
 | `AGENT_FALLBACKS` | Optional. Default on. Set `off` only if you switch to a model that doesn't support refusal fallbacks | No |
 
 You can remove `NEXT_PUBLIC_PRO_PAYMENT_LINK` and `NEXT_PUBLIC_PRO_PRICE_LABEL`; they're no longer used.
+
+### Giving beta testers Pro
+
+Two ways, both in Supabase → **Table Editor**:
+
+1. **Invite codes** (table `beta_codes`): **Insert row** → `code` e.g. `BETA-LAGOS` (capital letters, 4–40
+   characters), `max_uses` e.g. `25`, optionally `expires_at`, and a `note` for yourself. Testers enter it on the
+   Pro page (or when creating their business). `used_count` shows how many used it; untick `active` to stop a code.
+   Each person gets 10 tries an hour.
+2. **A switch for one business** (table `business_billing`): find the business, set `comp` to `true` (and
+   `comp_reason` to e.g. `beta`). Set it back to `false` to remove Pro.
 
 ## 4. Policy pages (needed for Paystack activation)
 

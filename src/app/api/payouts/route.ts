@@ -1,3 +1,5 @@
+import { PAYMENTS_ENABLED } from "@/lib/billing";
+import { clientIp, rateLimit, tooMany } from "@/lib/server/rate-limit";
 import { isPaystackConfigured, paystack, PaystackError } from "@/lib/server/paystack";
 import { json, memberRole, requestUser, supabaseAdmin } from "@/lib/server/supabase-admin";
 
@@ -50,7 +52,8 @@ export async function POST(request: Request) {
     const { data } = await db.from("business_payouts").select("*").eq("business_id", businessId).maybeSingle();
     return json({ payouts: data ? publicPayouts(data) : null, available: isPaystackConfigured() });
   }
-  if (!isPaystackConfigured()) return json({ error: "Online payments aren't set up yet. Please try again later." }, 503);
+  if (!PAYMENTS_ENABLED || !isPaystackConfigured()) return json({ error: "Online payments aren't switched on yet." }, 503);
+  if (!(await rateLimit(`payouts:${user.id}`, 600, 30)) || !(await rateLimit(`payouts-ip:${clientIp(request)}`, 600, 60))) return tooMany();
 
   const validAccount = /^\d{10}$/.test(body.accountNumber ?? "") && Boolean(body.bankCode);
   try {

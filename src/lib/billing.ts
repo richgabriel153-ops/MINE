@@ -3,12 +3,29 @@ import { formatNaira } from "./money";
 
 export type Plan = "monthly" | "yearly";
 
+/** A whole-naira price from a setting, or the default when it's missing or not a sensible number. */
+export function priceKobo(setting: string | undefined, defaultNaira: number): number {
+  const n = Number(setting);
+  return Number.isInteger(n) && n >= 100 && n <= 10_000_000 ? n * 100 : defaultNaira * 100;
+}
+
+/**
+ * Prices come from settings so they can change without new code:
+ *   NEXT_PUBLIC_PRICE_MONTHLY_NAIRA (default 3000) and NEXT_PUBLIC_PRICE_YEARLY_NAIRA (default 28000).
+ * They must match the amounts of your Paystack plans. Changing them needs a redeploy.
+ */
 export const PLANS: Record<Plan, { kobo: number; label: string; per: string }> = {
-  monthly: { kobo: 300_000, label: "Monthly", per: "month" },
-  yearly: { kobo: 2_800_000, label: "Yearly", per: "year" },
+  monthly: { kobo: priceKobo(process.env.NEXT_PUBLIC_PRICE_MONTHLY_NAIRA, 3_000), label: "Monthly", per: "month" },
+  yearly: { kobo: priceKobo(process.env.NEXT_PUBLIC_PRICE_YEARLY_NAIRA, 28_000), label: "Yearly", per: "year" },
 };
 
-/** Paying yearly instead of 12 months: ₦36,000 − ₦28,000 = ₦8,000. */
+/**
+ * Master switch for taking real money (Pro subscriptions and Pay Now links): off unless
+ * NEXT_PUBLIC_PAYMENTS_ENABLED is "on". Off during the beta: testers get Pro with a code instead.
+ */
+export const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "on";
+
+/** Paying yearly instead of 12 months (₦36,000 − ₦28,000 = ₦8,000 at the default prices). */
 export const YEARLY_SAVING_KOBO = PLANS.monthly.kobo * 12 - PLANS.yearly.kobo;
 
 /** Pro keeps working this long after a missed renewal, to give time to pay. */

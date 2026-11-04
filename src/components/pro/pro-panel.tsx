@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, BadgeCheck, Check, CreditCard, KeyRound, Loader2, Lock, Minus, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  CreditCard,
+  KeyRound,
+  Loader2,
+  Lock,
+  Minus,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useAccess } from "@/components/access/access-provider";
@@ -13,9 +24,16 @@ import { ClassicTemplate } from "@/components/templates/classic";
 import { ScaledPreview } from "@/components/templates/scaled-preview";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { billingSummary, PLANS, YEARLY_SAVING_KOBO, type Plan } from "@/lib/billing";
+import { billingSummary, PAYMENTS_ENABLED, PLANS, YEARLY_SAVING_KOBO, type Plan } from "@/lib/billing";
 import { BRAND } from "@/lib/brand";
 import { accessToken, isCloudConfigured } from "@/lib/cloud/client";
 import { formatNaira } from "@/lib/money";
@@ -44,7 +62,11 @@ const FAQ = [
   },
 ] as const;
 
-async function billingAction(action: string, businessId: string, plan?: Plan): Promise<{ url?: string; error?: string }> {
+async function billingAction(
+  action: string,
+  businessId: string,
+  plan?: Plan,
+): Promise<{ url?: string; error?: string }> {
   const token = await accessToken();
   const res = await fetch("/api/billing", {
     method: "POST",
@@ -58,15 +80,22 @@ async function billingAction(action: string, businessId: string, plan?: Plan): P
 
 function Cell({ value, pro }: { value: string | boolean; pro?: boolean }) {
   if (value === true)
-    return <Check className={cn("mx-auto size-5", pro ? "text-primary" : "text-muted-foreground")} aria-label="Included" />;
+    return (
+      <Check className={cn("mx-auto size-5", pro ? "text-primary" : "text-muted-foreground")} aria-label="Included" />
+    );
   if (value === false) return <Minus className="mx-auto size-5 text-muted-foreground/60" aria-label="Not included" />;
-  return <span className={cn("text-sm", pro ? "font-semibold text-foreground" : "text-muted-foreground")}>{value}</span>;
+  return (
+    <span className={cn("text-sm", pro ? "font-semibold text-foreground" : "text-muted-foreground")}>{value}</span>
+  );
 }
 
 function ProBadge({ className }: { className?: string }) {
   return (
     <span
-      className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tracking-wide text-[#33250a]", className)}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tracking-wide text-[#33250a]",
+        className,
+      )}
       style={{ backgroundColor: GOLD }}
     >
       <Sparkles className="size-3.5" /> PRO
@@ -94,14 +123,21 @@ function PlanPicker({ value, onChange }: { value: Plan; onChange: (p: Plan) => v
             style={{ "--gold": GOLD } as React.CSSProperties}
           >
             {p === "yearly" && (
-              <span className="absolute -top-2.5 right-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[#33250a]" style={{ backgroundColor: GOLD }}>
+              <span
+                className="absolute -top-2.5 right-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[#33250a]"
+                style={{ backgroundColor: GOLD }}
+              >
                 BEST DEAL
               </span>
             )}
             <span className="text-sm font-semibold text-white/80">{plan.label}</span>
             <span className="text-xl font-extrabold tracking-tight">{formatNaira(plan.kobo)}</span>
             <span className="text-xs text-white/65">per {plan.per}</span>
-            {p === "yearly" && <span className="mt-1 text-xs font-semibold" style={{ color: GOLD }}>Save {formatNaira(YEARLY_SAVING_KOBO)} vs monthly</span>}
+            {p === "yearly" && (
+              <span className="mt-1 text-xs font-semibold" style={{ color: GOLD }}>
+                Save {formatNaira(YEARLY_SAVING_KOBO)} vs monthly
+              </span>
+            )}
           </button>
         );
       })}
@@ -139,7 +175,11 @@ export function ProPanel() {
   if (!access) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
 
   if (access.mode === "cloud" && access.role !== "owner")
-    return <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">Only the business owner manages the plan.</p>;
+    return (
+      <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+        Only the business owner manages the plan.
+      </p>
+    );
 
   async function run(action: string, p?: Plan) {
     if (!access?.cloud) return;
@@ -152,7 +192,11 @@ export function ProPanel() {
       }
       await reload();
       toast.success(
-        action === "cancel" ? "Your plan won't renew." : action === "resume" ? "Your plan will renew as normal." : "Your plan has been updated.",
+        action === "cancel"
+          ? "Your plan won't renew."
+          : action === "resume"
+            ? "Your plan will renew as normal."
+            : "Your plan has been updated.",
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
@@ -171,7 +215,10 @@ export function ProPanel() {
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl bg-[#1c1e33] px-5 pt-6 pb-7 text-white shadow-lg">
         <div className="pointer-events-none absolute -top-20 -right-20 size-56 rounded-full bg-primary/50 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-16 size-48 rounded-full blur-3xl" style={{ backgroundColor: `${GOLD}33` }} />
+        <div
+          className="pointer-events-none absolute -bottom-24 -left-16 size-48 rounded-full blur-3xl"
+          style={{ backgroundColor: `${GOLD}33` }}
+        />
         <div className="relative flex flex-col gap-4">
           <ProBadge className="self-start" />
           {access.isPro ? (
@@ -184,48 +231,82 @@ export function ProPanel() {
             </>
           ) : (
             <>
-              <h2 className="text-[1.75rem] leading-[1.15] font-extrabold tracking-tight">Run your business like a big brand</h2>
-              <p className="text-white/75">Track debts, take payments online, send quotes, see your profit and add your staff.</p>
+              <h2 className="text-[1.75rem] leading-[1.15] font-extrabold tracking-tight">
+                Run your business like a big brand
+              </h2>
+              <p className="text-white/75">
+                Track debts, take payments online, send quotes, see your profit and add your staff.
+              </p>
               {cloud?.billingStatus && cloud.billingStatus !== "none" && (
                 <div className="rounded-xl bg-white/10 p-3 text-sm">
                   <span className="font-semibold">{summary.title}.</span> {summary.detail}
                 </div>
               )}
-              <PlanPicker value={plan} onChange={setPlan} />
-              {access.mode === "cloud" ? (
-                <Button
-                  size="lg"
-                  className="h-14 w-full text-base font-bold text-[#33250a] hover:opacity-95"
-                  style={{ backgroundColor: GOLD }}
-                  disabled={busy !== null || !isCloudConfigured()}
-                  onClick={() => run("checkout", plan)}
-                >
-                  {busy === "checkout" ? <Loader2 className="animate-spin" /> : null}
-                  Upgrade: {formatNaira(PLANS[plan].kobo)}/{PLANS[plan].per} <ArrowRight />
-                </Button>
-              ) : isCloudConfigured() ? (
-                <Button asChild size="lg" className="h-14 w-full text-base font-bold text-[#33250a]" style={{ backgroundColor: GOLD }}>
-                  <Link href="/account?next=%2Fpro">
-                    Create free account to upgrade <ArrowRight />
-                  </Link>
-                </Button>
+              {!PAYMENTS_ENABLED ? (
+                <div className="flex flex-col gap-3 rounded-2xl bg-white/10 p-4">
+                  <div className="text-lg font-bold">Pro is free for beta testers</div>
+                  <p className="text-sm text-white/80">
+                    Enter your beta code below to switch on every Pro feature. After the beta, Pro will cost{" "}
+                    {formatNaira(PLANS.monthly.kobo)} a month or {formatNaira(PLANS.yearly.kobo)} a year. You won&apos;t
+                    be charged without choosing a plan.
+                  </p>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="h-14 w-full text-base font-bold text-[#33250a]"
+                    style={{ backgroundColor: GOLD }}
+                  >
+                    <a href="#unlock">
+                      Enter beta code <ArrowRight />
+                    </a>
+                  </Button>
+                </div>
               ) : (
-                <p className="rounded-xl bg-white/10 p-3 text-sm text-white/80">Upgrading opens soon. Please check back.</p>
+                <>
+                  <PlanPicker value={plan} onChange={setPlan} />
+                  {access.mode === "cloud" ? (
+                    <Button
+                      size="lg"
+                      className="h-14 w-full text-base font-bold text-[#33250a] hover:opacity-95"
+                      style={{ backgroundColor: GOLD }}
+                      disabled={busy !== null || !isCloudConfigured()}
+                      onClick={() => run("checkout", plan)}
+                    >
+                      {busy === "checkout" ? <Loader2 className="animate-spin" /> : null}
+                      Upgrade: {formatNaira(PLANS[plan].kobo)}/{PLANS[plan].per} <ArrowRight />
+                    </Button>
+                  ) : isCloudConfigured() ? (
+                    <Button
+                      asChild
+                      size="lg"
+                      className="h-14 w-full text-base font-bold text-[#33250a]"
+                      style={{ backgroundColor: GOLD }}
+                    >
+                      <Link href="/account?next=%2Fpro">
+                        Create free account to upgrade <ArrowRight />
+                      </Link>
+                    </Button>
+                  ) : (
+                    <p className="rounded-xl bg-white/10 p-3 text-sm text-white/80">
+                      Upgrading opens soon. Please check back.
+                    </p>
+                  )}
+                  <p className="flex items-center justify-center gap-1.5 text-xs text-white/60">
+                    <Lock className="size-3.5" /> Secure payment by Paystack · Cancel any time
+                  </p>
+                  <p className="text-center text-xs text-white/60">
+                    Renews automatically until you cancel. See our{" "}
+                    <Link href="/terms" className="underline">
+                      Terms
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/refunds" className="underline">
+                      Refund Policy
+                    </Link>
+                    .
+                  </p>
+                </>
               )}
-              <p className="flex items-center justify-center gap-1.5 text-xs text-white/60">
-                <Lock className="size-3.5" /> Secure payment by Paystack · Cancel any time
-              </p>
-              <p className="text-center text-xs text-white/60">
-                Renews automatically until you cancel. See our{" "}
-                <Link href="/terms" className="underline">
-                  Terms
-                </Link>{" "}
-                and{" "}
-                <Link href="/refunds" className="underline">
-                  Refund Policy
-                </Link>
-                .
-              </p>
             </>
           )}
         </div>
@@ -237,18 +318,18 @@ export function ProPanel() {
           <h2 id="manage" className="font-bold">
             Manage your plan
           </h2>
-          {cloud.billingStatus !== "non_renewing" || cloud.pendingPlan ? (
-            (["yearly", "monthly"] as const)
-              .filter((p) => p !== (cloud.pendingPlan ?? cloud.plan))
-              .map((p) => (
-                <Button key={p} variant="outline" disabled={busy !== null} onClick={() => run("switch", p)}>
-                  {busy === "switch" && <Loader2 className="animate-spin" />}
-                  {p === cloud.plan && cloud.pendingPlan
-                    ? `Stay on ${PLANS[p].label}`
-                    : `Switch to ${PLANS[p].label}: ${formatNaira(PLANS[p].kobo)}/${PLANS[p].per}${p === "yearly" ? ` (save ${formatNaira(YEARLY_SAVING_KOBO)})` : ""}`}
-                </Button>
-              ))
-          ) : null}
+          {cloud.billingStatus !== "non_renewing" || cloud.pendingPlan
+            ? (["yearly", "monthly"] as const)
+                .filter((p) => p !== (cloud.pendingPlan ?? cloud.plan))
+                .map((p) => (
+                  <Button key={p} variant="outline" disabled={busy !== null} onClick={() => run("switch", p)}>
+                    {busy === "switch" && <Loader2 className="animate-spin" />}
+                    {p === cloud.plan && cloud.pendingPlan
+                      ? `Stay on ${PLANS[p].label}`
+                      : `Switch to ${PLANS[p].label}: ${formatNaira(PLANS[p].kobo)}/${PLANS[p].per}${p === "yearly" ? ` (save ${formatNaira(YEARLY_SAVING_KOBO)})` : ""}`}
+                  </Button>
+                ))
+            : null}
           <Button variant="outline" disabled={busy !== null} onClick={() => run("card")}>
             <CreditCard /> Update payment card
           </Button>
@@ -257,7 +338,12 @@ export function ProPanel() {
               Keep my plan (undo cancel)
             </Button>
           ) : (
-            <Button variant="ghost" className="text-destructive" disabled={busy !== null} onClick={() => setConfirmCancel(true)}>
+            <Button
+              variant="ghost"
+              className="text-destructive"
+              disabled={busy !== null}
+              onClick={() => setConfirmCancel(true)}
+            >
               Cancel plan
             </Button>
           )}
@@ -281,7 +367,10 @@ export function ProPanel() {
           <p className="text-sm text-muted-foreground">The same sale, free and Pro.</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <figure className="flex flex-col gap-2">
-              <div className="pointer-events-none overflow-hidden rounded-xl border bg-card p-1.5 shadow-xs" aria-hidden>
+              <div
+                className="pointer-events-none overflow-hidden rounded-xl border bg-card p-1.5 shadow-xs"
+                aria-hidden
+              >
                 <ScaledPreview>
                   <ClassicTemplate doc={SAMPLE_RECEIPT} profile={SAMPLE_PROFILE} showFooterBrand />
                 </ScaledPreview>
@@ -289,7 +378,11 @@ export function ProPanel() {
               <figcaption className="text-center text-sm font-medium text-muted-foreground">Free</figcaption>
             </figure>
             <figure className="flex flex-col gap-2">
-              <div className="pointer-events-none overflow-hidden rounded-xl border-2 bg-card p-1.5 shadow-md" style={{ borderColor: GOLD }} aria-hidden>
+              <div
+                className="pointer-events-none overflow-hidden rounded-xl border-2 bg-card p-1.5 shadow-md"
+                style={{ borderColor: GOLD }}
+                aria-hidden
+              >
                 <ScaledPreview>
                   <BoldTemplate doc={SAMPLE_RECEIPT} profile={SAMPLE_PROFILE} showFooterBrand={false} />
                 </ScaledPreview>
@@ -387,8 +480,8 @@ export function ProPanel() {
           <DialogHeader>
             <DialogTitle>Cancel your plan?</DialogTitle>
             <DialogDescription>
-              Pro stays on until {summary.detail.match(/\d{2}\/\d{2}\/\d{4}/)?.[0] ?? "the end of your paid period"}. After
-              that you move to Free. Your records stay safe and you can upgrade again any time.
+              Pro stays on until {summary.detail.match(/\d{2}\/\d{2}\/\d{4}/)?.[0] ?? "the end of your paid period"}.
+              After that you move to Free. Your records stay safe and you can upgrade again any time.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

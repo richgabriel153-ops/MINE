@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { createPayLink } from "@/lib/cloud/repo";
 import { displayUrl } from "@/lib/pay-link";
 import type { DocumentRecord } from "@/lib/types";
+import { PAYMENTS_ENABLED } from "@/lib/billing";
 
 /** On an invoice: add a Pay Now link so the customer can pay online. */
 export function PayLinkPanel({
@@ -58,6 +59,9 @@ export function PayLinkPanel({
         </div>
       </div>
     );
+
+  // Online payments are off during the beta (NEXT_PUBLIC_PAYMENTS_ENABLED).
+  if (!PAYMENTS_ENABLED) return null;
 
   if (!access.can.payLinks)
     return (

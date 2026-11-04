@@ -1,4 +1,4 @@
-import { PLANS, type Plan } from "@/lib/billing";
+import { PAYMENTS_ENABLED, PLANS, type Plan } from "@/lib/billing";
 import { getBilling, syncBusinessBilling, type BillingRow } from "@/lib/server/billing-sync";
 import { appOrigin, isPaystackConfigured, paystack, PaystackError, planCodes } from "@/lib/server/paystack";
 import { json, memberRole, requestUser, supabaseAdmin } from "@/lib/server/supabase-admin";
@@ -27,6 +27,8 @@ export async function POST(request: Request) {
   if ((await memberRole(user.id, businessId)) !== "owner") return json({ error: "Only the business owner can manage the plan." }, 403);
   if (!isPaystackConfigured()) return json({ error: "Payments aren't set up yet. Please try again later." }, 503);
 
+  if (!PAYMENTS_ENABLED && (action === "checkout" || action === "switch" || action === "card"))
+    return json({ error: "Payments are switched off during the beta. Ask for a beta code to get Pro." }, 403);
   const plan = body.plan === "monthly" || body.plan === "yearly" ? (body.plan as Plan) : null;
   const codes = planCodes();
 
