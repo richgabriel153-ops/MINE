@@ -1,0 +1,67 @@
+# Nightly copy of the InCeipt database (free alternative to Supabase's paid backups).
+# Each copy is encrypted with BACKUP_PASSPHRASE and kept for 30 days under this repository's Actions.
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL     the Session pooler connection string from Supabase → Connect, with the password filled in
+#   BACKUP_PASSPHRASE   a long password you choose and keep safe; you need it to open a backup
+# How to restore: see SETUP.md, "Backups".
+name: Nightly database backup
+
+on:
+  schedule:
+    - cron: "17 1 * * *" # 01:17 UTC = 02:17 in Lagos, every night
+  workflow_dispatch: {} # "Run workflow" button for a backup right now
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check the secrets are set
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::error::Add SUPABASE_DB_URL and BACKUP_PASSPHRASE in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Copy roles, structure and data
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir backup
+          supabase db dump --db-url "$DB_URL" -f backup/roles.sql --role-only
+          supabase db dump --db-url "$DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$DB_URL" -f backup/data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+          ls -l backup
+          test -s backup/schema.sql
+
+      - name: Encrypt
+        env:
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          stamp=$(date -u +%Y-%m-%d)
+          tar -czf "inceipt-db-$stamp.tar.gz" backup
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" \
+            --symmetric --cipher-algo AES256 -o "inceipt-db-$stamp.tar.gz.gpg" "inceipt-db-$stamp.tar.gz"
+          rm -rf backup "inceipt-db-$stamp.tar.gz"
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inceipt-db-${{ env.STAMP }}
+          path: inceipt-db-${{ env.STAMP }}.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
