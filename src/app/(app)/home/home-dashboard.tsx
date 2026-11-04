@@ -1,39 +1,46 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, ChevronRight, FileText, ReceiptText, ShieldCheck } from "lucide-react";
+import { BadgeCheck, ChevronRight, FileText, ReceiptText } from "lucide-react";
 
 import { ProLock, useAccess } from "@/components/access/access-provider";
 import { DocumentCard } from "@/components/history/document-card";
 import { InstallButton } from "@/components/pwa/install-button";
 import { Button } from "@/components/ui/button";
-import { useDocuments } from "@/hooks/use-documents";
 import { useProfile } from "@/hooks/use-profile";
 import { lagosDate } from "@/lib/dates";
-import { getSettings } from "@/lib/db";
+import { getBusinessSummary, listDocumentsPage, type BusinessSummary } from "@/lib/db";
 import { formatNaira } from "@/lib/money";
-import { summarise } from "@/lib/summary";
-
-/** Remind people to back up once they have some records and haven't for a while. */
-const BACKUP_REMINDER_AFTER_DOCS = 10;
-const BACKUP_REMINDER_DAYS = 14;
+import type { DocumentRecord } from "@/lib/types";
 
 export function HomeDashboard() {
   const [profile] = useProfile();
-  const { docs: everything } = useDocuments();
-  const docs = useMemo(() => everything?.filter((d) => d.type !== "quote") ?? null, [everything]);
   const { access, showUpgrade } = useAccess();
   const canTrackDebts = access?.can.trackDebts ?? false;
-  const recent = docs?.slice(0, 5) ?? [];
-  const summary = useMemo(() => (docs ? summarise(docs, lagosDate()) : null), [docs]);
-  const [backupStale, setBackupStale] = useState(false);
+  const [recent, setRecent] = useState<DocumentRecord[] | null>(null);
+  const [summary, setSummary] = useState<BusinessSummary | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const owner = access?.can.viewRevenue ?? false;
+
   useEffect(() => {
-    getSettings().then((s) =>
-      setBackupStale(!s.lastBackupAt || Date.now() - Date.parse(s.lastBackupAt) > BACKUP_REMINDER_DAYS * 86_400_000),
-    );
-  }, []);
-  const needsBackup = backupStale && docs !== null && docs.length >= BACKUP_REMINDER_AFTER_DOCS;
+    if (!access) return;
+    let active = true;
+    Promise.all([
+      listDocumentsPage({ type: "all", offset: 0, limit: 5 }),
+      owner ? getBusinessSummary(lagosDate()) : Promise.resolve(null),
+    ])
+      .then(([page, s]) => {
+        if (!active) return;
+        setRecent(page.docs);
+        setSummary(s);
+      })
+      .catch(() => active && setLoadError(true));
+    return () => {
+      active = false;
+    };
+  }, [access, owner]);
+  const docs = recent;
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,7 +80,7 @@ export function HomeDashboard() {
         </Link>
       </div>
 
-      {summary && docs && docs.length > 0 && access?.can.viewRevenue && (
+      {summary && docs && docs.length > 0 && owner && (
         <section aria-label="Summary" className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl border bg-card p-4 shadow-xs">
             <div className="text-xs text-muted-foreground">Sales this week</div>
@@ -117,29 +124,21 @@ export function HomeDashboard() {
             </button>
           )}
           <p className="col-span-2 -mt-1 text-xs text-muted-foreground">
-            Sales = money received, by receipt date. Weeks start on Monday.
+            Sales = money received, on the day it was paid. Weeks start on Monday.
           </p>
         </section>
       )}
 
-      {needsBackup && (
-        <Link
-          href="/settings"
-          className="flex items-center gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"
-        >
-          <ShieldCheck className="size-6 shrink-0 text-warning" />
-          <span className="flex-1">
-            <strong>Back up your records.</strong> Your receipts are only on this phone. Save a backup so you
-            don&apos;t lose them.
-          </span>
-          <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
-        </Link>
+      {loadError && (
+        <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+          Couldn&apos;t load your records. Check your internet connection and pull down to refresh.
+        </p>
       )}
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Recent</h2>
-          {recent.length > 0 && (
+          {(recent?.length ?? 0) > 0 && (
             <Link href="/history" className="text-sm font-medium text-primary">
               See all
             </Link>
@@ -147,13 +146,13 @@ export function HomeDashboard() {
         </div>
         {docs === null ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : recent.length === 0 ? (
+        ) : docs.length === 0 ? (
           <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
             Your receipts and invoices will show here.
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {recent.map((d) => (
+            {docs.map((d) => (
               <li key={d.id}>
                 <DocumentCard doc={d} />
               </li>

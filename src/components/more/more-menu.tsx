@@ -6,6 +6,7 @@ import {
   Calculator,
   ChevronRight,
   ClipboardList,
+  Contact,
   FileText,
   Landmark,
   LineChart,
@@ -39,6 +40,7 @@ interface Item {
 const ITEMS: Item[] = [
   { href: "/assistant", label: "Assistant (AI)", text: "Type what you want, it's done for you", icon: Sparkles, pro: (c) => c.assistant, cloudOnly: true },
   { href: "/account", label: "Account", text: "Sign in, switch business", icon: UserRound },
+  { href: "/customers", label: "Customers", text: "Everyone you've sold to", icon: Contact },
   { href: "/profile", label: "Business details", text: "Logo, contacts, bank, colour", icon: Store, show: (_c, _m, r) => r === "owner" },
   { href: "/quotes", label: "Quotations", text: "Quotes and proforma invoices", icon: FileText, pro: (c) => c.quotes },
   { href: "/expenses", label: "Expenses", text: "Log what you spend", icon: Wallet, show: (_c, _m, r) => r === "owner", pro: (c) => c.expenses },
@@ -47,7 +49,7 @@ const ITEMS: Item[] = [
   { href: "/payouts", label: "Get paid online", text: "Pay Now links on invoices", icon: Landmark, show: (_c, _m, r) => r === "owner", pro: (c) => c.payLinks, cloudOnly: true },
   { href: "/staff", label: "Staff", text: "Invite people to help you", icon: Users, show: (_c, _m, r) => r === "owner", pro: (c) => c.manageStaff, cloudOnly: true },
   { href: "/activity", label: "Activity log", text: "Who did what, and when", icon: ClipboardList, show: (_c, _m, r) => r === "owner", pro: (c) => c.manageStaff, cloudOnly: true },
-  { href: "/settings", label: "Backup", text: "Save or restore your records", icon: ShieldCheck, show: (_c, m) => m === "local" },
+  { href: "/settings", label: "Your data", text: "Download your data or delete your account", icon: ShieldCheck },
   { href: "/pro", label: "InCeipt Pro", text: "Plans and billing", icon: BadgeCheck, show: (_c, _m, r) => r === "owner" },
 ];
 
@@ -57,14 +59,14 @@ export function MoreMenu() {
 
   return (
     <ul className="flex flex-col gap-2">
-      {access.mode === "local" && (
+      {access.role === "owner" && (
         <li>
           <PreviewLink />
         </li>
       )}
       {ITEMS.filter((i) => !i.show || i.show(access.can, access.mode, access.role)).map((item) => {
         const locked = item.pro ? !item.pro(access.can) : false;
-        const needsAccount = item.cloudOnly && access.mode === "local";
+        const needsAccount = false;
         const body = (
           <>
             <item.icon className="size-6 shrink-0 text-primary" />

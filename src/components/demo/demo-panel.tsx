@@ -9,7 +9,7 @@ import { useAccess } from "@/components/access/access-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { addSampleData, canAddSampleData } from "@/lib/demo-data";
-import { setProLocked, setProUnlocked } from "@/lib/local-db";
+import { accessToken } from "@/lib/cloud/client";
 import { usePreviewMode } from "@/lib/preview";
 
 const TOUR: { href: string; label: string; text: string }[] = [
@@ -46,18 +46,24 @@ export function DemoPanel() {
         The Pro preview is only available on test (preview) links, not on the live app.
       </p>
     );
-  if (access.mode === "cloud")
-    return (
-      <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-        You&apos;re signed in to an account. The Pro preview works on this phone&apos;s records only: sign out in More → Account
-        to use it.
-      </p>
-    );
+  if (access.role !== "owner")
+    return <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">Only the business owner can turn on the Pro preview.</p>;
+
+  const setPro = async (on: boolean) => {
+    const token = await accessToken();
+    const res = await fetch("/api/demo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ businessId: access.cloud?.businessId, on }),
+    });
+    if (!res.ok) throw new Error("Couldn't change Pro.");
+  };
 
   const turnOn = async (withSamples: boolean) => {
     setBusy(true);
     try {
-      await setProUnlocked();
+      await setPro(true);
+      await reload();
       if (withSamples) await addSampleData();
       await reload();
       toast.success(withSamples ? "Pro preview is on, with sample records." : "Pro preview is on.");
@@ -71,7 +77,7 @@ export function DemoPanel() {
   const turnOff = async () => {
     setBusy(true);
     try {
-      await setProLocked();
+      await setPro(false);
       await reload();
       toast.success("Pro preview is off.");
     } finally {
@@ -84,7 +90,7 @@ export function DemoPanel() {
       <div className="flex gap-3 rounded-2xl border border-dashed border-primary/40 bg-secondary p-4 text-sm">
         <FlaskConical className="size-6 shrink-0 text-primary" />
         <p>
-          Test link only. This switches on every Pro feature on this phone so you can try them. It doesn&apos;t exist on the live
+          Test link only. This switches on every Pro feature for your business so you can try them. It doesn&apos;t exist on the live
           app, and no payment is made.
         </p>
       </div>
@@ -114,11 +120,11 @@ export function DemoPanel() {
                   {busy && <Loader2 className="animate-spin" />} Turn on Pro with sample records
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Adds a sample business (Mama Chi Kitchen) with receipts, invoices, quotes and expenses from the last 5 months.
+                  Adds sample receipts, invoices, quotes and expenses from the last 5 months to your business.
                 </p>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">You already have records on this phone, so they&apos;ll be used.</p>
+              <p className="text-sm text-muted-foreground">Your business already has records, so they&apos;ll be used.</p>
             )}
             <Button variant={empty ? "outline" : "default"} size="lg" disabled={busy} onClick={() => turnOn(false)}>
               Turn on Pro{empty ? " without samples" : ""}
@@ -142,7 +148,7 @@ export function DemoPanel() {
             </Link>
           ))}
           <p className="text-xs text-muted-foreground">
-            Staff accounts and Pay Now links need Supabase and Paystack keys, so they can&apos;t be previewed on this phone alone.
+            Pay Now links need Paystack keys before they can be tried.
           </p>
         </section>
       )}

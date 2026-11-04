@@ -10,9 +10,9 @@ import { DocumentActions } from "@/components/history/document-actions";
 import { DocumentCard } from "@/components/history/document-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useDocuments } from "@/hooks/use-documents";
+import { usePagedDocuments } from "@/hooks/use-paged-documents";
 import { ProLock, useAccess } from "@/components/access/access-provider";
-import { filterDocuments, monthLabel, type StatusFilter, type TypeFilter } from "@/lib/history-filter";
+import { monthLabel, type StatusFilter, type TypeFilter } from "@/lib/history-filter";
 import { formatNaira } from "@/lib/money";
 import { FREE_HISTORY_LIMIT } from "@/lib/pro";
 import { owingKobo } from "@/lib/summary";
@@ -55,17 +55,8 @@ function groupByMonth(docs: DocumentRecord[]) {
 }
 
 export function HistoryList() {
-  const { docs: everything, reload } = useDocuments();
-  // Quotations have their own page; History is receipts and invoices.
-  const allDocs = useMemo(() => everything?.filter((d) => d.type !== "quote") ?? null, [everything]);
   const { access, showUpgrade } = useAccess();
   const canTrackDebts = access?.can.trackDebts ?? false;
-  // Free version shows the newest FREE_HISTORY_LIMIT documents; the rest stay saved and in backups.
-  const limited = access !== null && !access.can.unlimitedHistory && allDocs !== null && allDocs.length > FREE_HISTORY_LIMIT;
-  const docs = useMemo(
-    () => (allDocs && access !== null ? (limited ? allDocs.slice(0, FREE_HISTORY_LIMIT) : allDocs) : null),
-    [allDocs, access, limited],
-  );
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -73,6 +64,13 @@ export function HistoryList() {
   const requestedStatus = readStatus(params.get("status"));
   const status: StatusFilter = requestedStatus === "owing" && !canTrackDebts ? "all" : requestedStatus;
   const type = readType(params.get("type"));
+  // Free version shows the newest FREE_HISTORY_LIMIT documents; the rest stay saved in the account.
+  const max = access && !access.can.unlimitedHistory ? FREE_HISTORY_LIMIT : Infinity;
+  const { docs, hasMore, loadMore, loadingMore, error, reload } = usePagedDocuments(
+    { type: type === "all" ? "all" : type, status, search: query },
+    max,
+  );
+  const limited = max !== Infinity && docs !== null && docs.length >= FREE_HISTORY_LIMIT;
 
   // Filters live in the address, so Back returns to the same view.
   function setParam(key: string, value: string, fallback: string) {
@@ -83,14 +81,24 @@ export function HistoryList() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
-  const filtered = useMemo(() => (docs ? filterDocuments(docs, { query, status, type }) : []), [docs, query, status, type]);
+  const filtered = useMemo(() => docs ?? [], [docs]);
   const groups = useMemo(() => groupByMonth(filtered), [filtered]);
   const owingTotal = useMemo(() => filtered.reduce((sum, d) => sum + owingKobo(d), 0), [filtered]);
   const filtering = query !== "" || status !== "all" || type !== "all";
 
-  if (docs === null) return <p className="py-10 text-center text-muted-foreground">Loading…</p>;
+  if (error && docs === null)
+    return (
+      <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border p-6 text-center">
+        <p>Couldn&apos;t load your records. Check your internet connection.</p>
+        <Button variant="outline" onClick={() => void reload()}>
+          Try again
+        </Button>
+      </div>
+    );
 
-  if (docs.length === 0)
+  if (docs === null) return <ListSkeleton />;
+
+  if (docs.length === 0 && !filtering)
     return (
       <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed p-8 text-center">
         <p className="text-muted-foreground">No receipts or invoices yet.</p>
@@ -155,7 +163,7 @@ export function HistoryList() {
       </div>
 
       <p className="text-sm text-muted-foreground" aria-live="polite">
-        {filtered.length} {filtered.length === 1 ? "result" : "results"}
+        {hasMore ? `${filtered.length}+` : filtered.length} {filtered.length === 1 ? "result" : "results"}
         {canTrackDebts && owingTotal > 0 && (status === "owing" || status === "unpaid" || status === "part") && (
           <> · {formatNaira(owingTotal)} owed</>
         )}
@@ -163,8 +171,8 @@ export function HistoryList() {
 
       {limited && (
         <Link href="/pro" className="rounded-xl border border-highlight/50 bg-highlight/10 p-3 text-sm text-[#5a4210]">
-          Showing your latest {FREE_HISTORY_LIMIT} of {allDocs?.length} records. Older ones are safe on this phone and in
-          your backups. <span className="font-semibold underline">Go Pro to see them all.</span>
+          Showing your latest {FREE_HISTORY_LIMIT} records. Older ones are safe in your account.{" "}
+          <span className="font-semibold underline">Go Pro to see them all.</span>
         </Link>
       )}
 
@@ -193,6 +201,27 @@ export function HistoryList() {
           </section>
         ))
       )}
+
+      {hasMore && (
+        <Button variant="outline" size="lg" onClick={() => void loadMore()} disabled={loadingMore}>
+          {loadingMore ? "Loading…" : "Load more"}
+        </Button>
+      )}
+      {error && docs !== null && (
+        <p role="alert" className="text-center text-sm text-destructive">
+          {error}
+        </p>
+      )}
     </div>
+  );
+}
+
+function ListSkeleton() {
+  return (
+    <ul className="flex flex-col gap-2" aria-busy="true" aria-label="Loading">
+      {Array.from({ length: 6 }, (_, i) => (
+        <li key={i} className="h-[72px] animate-pulse rounded-xl border bg-muted/60" />
+      ))}
+    </ul>
   );
 }

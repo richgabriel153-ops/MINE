@@ -1,3 +1,4 @@
+import { cacheClear } from "../offline-cache";
 import { isCloudConfigured, supabase } from "./client";
 
 const BUSINESS_KEY = "inceipt.business";
@@ -42,7 +43,14 @@ export async function getSignedInEmail(): Promise<string | null> {
   return data.session?.user.email ?? null;
 }
 
+/** Log out and forget this phone's saved copy of the business's records. */
 export async function signOut(): Promise<void> {
   setActiveBusinessId(null);
+  try {
+    localStorage.removeItem("inceipt.access");
+  } catch {
+    // ignore
+  }
+  await cacheClear();
   if (isCloudConfigured()) await supabase().auth.signOut();
 }

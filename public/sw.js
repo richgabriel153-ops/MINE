@@ -7,12 +7,12 @@
  *   even if it hasn't been opened yet.
  * - /api is never cached.
  */
-const VERSION = "v7";
+const VERSION = "v8";
 const PAGE_CACHE = `pages-${VERSION}`;
 const ASSET_CACHE = `assets-${VERSION}`;
 const PAGES = [
   "/", "/home", "/create", "/view", "/history", "/profile", "/settings", "/pro",
-  "/more", "/account", "/quotes", "/expenses", "/profit", "/tax", "/assistant", "/terms", "/privacy", "/refunds",
+  "/more", "/account", "/customers", "/quotes", "/expenses", "/profit", "/tax", "/assistant", "/terms", "/privacy", "/refunds", "/signin", "/signup",
 ];
 const EXTRA = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icon.svg"];
 const SLOW_NETWORK_MS = 4000;

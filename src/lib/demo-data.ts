@@ -1,6 +1,6 @@
-/** Sample records for the Pro preview (test links only). Saved on this phone like real records. */
+/** Sample records for the Pro preview (test links only). Saved in the account like real records. */
 import { addDays, lagosDate } from "./dates";
-import * as local from "./local-db";
+import * as local from "./db";
 import type { DocumentDraft, PaymentMethod, PaymentStatus } from "./types";
 
 type Item = [description: string, quantity: number, naira: number];
@@ -31,9 +31,10 @@ function draft(
   };
 }
 
-/** True when this phone has no records yet (sample data is only added to an empty app). */
+/** True when the business has no records yet (sample data is only added to an empty business). */
 export async function canAddSampleData(): Promise<boolean> {
-  return (await local.listDocuments()).length === 0 && (await local.listExpenses()).length === 0;
+  const page = await local.listDocumentsPage({ type: "all", offset: 0, limit: 1 });
+  return page.docs.length === 0 && (await local.listExpenses()).length === 0;
 }
 
 export async function addSampleData(): Promise<void> {

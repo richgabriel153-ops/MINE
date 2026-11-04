@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { billingSummary } from "@/lib/billing";
 import { accessToken, friendlyError, isCloudConfigured } from "@/lib/cloud/client";
-import { createBusiness, importLocal, myBusinesses, type MyBusiness } from "@/lib/cloud/repo";
+import { createBusiness, importLocalSafely, myBusinesses, type MyBusiness } from "@/lib/cloud/repo";
+import { cleanProfileForUpload } from "@/lib/profile-clean";
 import { getSignedInEmail, setActiveBusinessId, signOut } from "@/lib/cloud/session";
 import * as local from "@/lib/local-db";
 import { hardNavigate } from "@/lib/navigate";
@@ -140,15 +141,25 @@ function SetupBusiness({
   next: string;
 }) {
   const [ownerName, setOwnerName] = useState("");
+  const [name, setName] = useState(businessName);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   async function setup() {
+    if (!name.trim()) {
+      setNameError("Enter your business name. It appears on every receipt.");
+      return;
+    }
     setBusy(true);
     try {
       const [profile, docs, counters] = await Promise.all([local.getProfile(), local.listDocuments(), local.getCounters()]);
-      const bid = await createBusiness(profile, ownerName.trim());
-      if (docs.length) await importLocal(bid, docs, counters);
+      const bid = await createBusiness(cleanProfileForUpload({ ...profile, name: name.trim() }), ownerName.trim());
+      if (docs.length) {
+        const { skipped } = await importLocalSafely(bid, docs, counters);
+        if (skipped.length)
+          toast.warning(`${skipped.length} old ${skipped.length === 1 ? "record" : "records"} couldn't be copied (${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? "…" : ""}). They're still on this phone.`);
+      }
       if (code.trim()) {
         const token = await accessToken();
         const res = await fetch("/api/unlock", {
@@ -156,7 +167,7 @@ function SetupBusiness({
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ code, businessId: bid }),
         });
-        if (!res.ok) toast.error("Your account is ready, but that unlock code didn't work. You can add it later on the Pro page.");
+        if (!res.ok) toast.error("Your account is ready, but that code didn't work. You can add it later on the Pro page.");
       }
       setActiveBusinessId(bid);
       toast.success("Your InCeipt account is ready");
@@ -188,15 +199,27 @@ function SetupBusiness({
             )}
           </span>
         </div>
+        <Field id="business-name" label="Business name" error={nameError} hint="Shown on every receipt and invoice.">
+          <Input
+            id="business-name"
+            value={name}
+            maxLength={120}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameError(null);
+            }}
+            placeholder="e.g. Mama Chi Kitchen"
+          />
+        </Field>
         <Field id="owner-name" label="Your name" optional hint="Shown to staff and in the activity log.">
           <Input id="owner-name" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="e.g. Ada Obi" />
         </Field>
-        {legacyPro && (
+        {(
           <Field
             id="legacy-code"
-            label="Your Pro unlock code"
+            label="Beta or Pro code"
             optional
-            hint="You unlocked Pro on this phone with a code. Enter it again to keep Pro on your account."
+            hint={legacyPro ? "You unlocked Pro on this phone with a code. Enter it again to keep Pro on your account." : "Got a beta tester code? Enter it to get Pro."}
           >
             <Input
               id="legacy-code"

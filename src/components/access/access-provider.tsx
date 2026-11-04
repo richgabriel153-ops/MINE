@@ -101,7 +101,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
                 <Sparkles /> Upgrade to Pro
               </Link>
             </Button>
-            {preview?.enabled && access?.mode === "local" && (
+            {preview?.enabled && access?.role === "owner" && (
               <Button asChild variant="outline" onClick={() => setUpgradeFeature(null)}>
                 <Link href="/demo">Try the Pro preview (test link)</Link>
               </Button>

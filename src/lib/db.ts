@@ -1,56 +1,81 @@
 /**
- * The app's data functions. Each one works on this phone's records (no account) or on the
- * InCeipt account's records (signed in), so screens don't need to know which.
+ * The app's data functions. Every record lives in the InCeipt account (Supabase); the phone keeps
+ * only a small read-only copy for when the network drops (see offline-cache.ts) and a few display
+ * preferences (last template, last note).
  */
 import * as cloud from "./cloud/repo";
-import { getCloudContext } from "./cloud/session";
+import { getCloudContext, type CloudContext } from "./cloud/session";
 import type { Expense, ExpenseDraft } from "./expenses";
-import * as local from "./local-db";
+import { withOfflineCopy } from "./offline-cache";
 import { OWNER_ONLY_MESSAGE } from "./permissions";
-import { salesFromDocuments } from "./summary";
 import type { BusinessProfile, DocType, DocumentDraft, DocumentRecord, PaymentMethod, QuoteStatus, TemplateId } from "./types";
 
-// Things that always stay on this phone.
-export { getSettings, updateSettings, exportAll, importBackup, getProStatus, setProUnlocked } from "./local-db";
-export type { Settings, ProStatus } from "./local-db";
+// Display preferences only (never records). Kept on this phone.
+export { getSettings, updateSettings } from "./local-db";
+export type { Settings } from "./local-db";
+export type { BusinessSummary, Customer, DocumentPageQuery } from "./cloud/repo";
 
-export async function isCloudMode(): Promise<boolean> {
-  return (await getCloudContext()) !== null;
+export class NotSignedInError extends Error {
+  constructor() {
+    super("Please log in to continue.");
+  }
 }
 
-export async function getProfile(): Promise<BusinessProfile> {
+async function ctx(): Promise<CloudContext> {
   const c = await getCloudContext();
-  return c ? cloud.getProfile(c.businessId) : local.getProfile();
+  if (!c) throw new NotSignedInError();
+  return c;
+}
+
+const key = (c: CloudContext, name: string) => `${c.businessId}:${name}`;
+
+export async function getProfile(): Promise<BusinessProfile> {
+  const c = await ctx();
+  return withOfflineCopy(key(c, "profile"), () => cloud.getProfile(c.businessId));
 }
 
 export async function saveProfile(profile: BusinessProfile): Promise<void> {
-  const c = await getCloudContext();
-  return c ? cloud.saveProfile(c.businessId, profile) : local.saveProfile(profile);
+  const c = await ctx();
+  return cloud.saveProfile(c.businessId, profile);
 }
 
 export async function peekNextNumber(type: DocType): Promise<string> {
-  const c = await getCloudContext();
-  return c ? cloud.peekNextNumber(c.businessId, type) : local.peekNextNumber(type);
+  const c = await ctx();
+  return cloud.peekNextNumber(c.businessId, type);
 }
 
+/** Every document (used by reports: profit, tax, quotes). Lists on screen use listDocumentsPage. */
 export async function listDocuments(): Promise<DocumentRecord[]> {
-  const c = await getCloudContext();
-  return c ? cloud.listDocuments(c.businessId) : local.listDocuments();
+  const c = await ctx();
+  return withOfflineCopy(key(c, "documents"), () => cloud.listDocuments(c.businessId));
+}
+
+/** One page of documents, filtered and searched in the database. */
+export async function listDocumentsPage(q: cloud.DocumentPageQuery): Promise<{ docs: DocumentRecord[]; hasMore: boolean }> {
+  const c = await ctx();
+  const name = `page:${q.type}:${q.status ?? "all"}:${q.search ?? ""}:${q.offset}`;
+  return withOfflineCopy(key(c, name), () => cloud.listDocumentsPage(c.businessId, q));
+}
+
+/** Home screen totals, calculated by the database (owner only). */
+export async function getBusinessSummary(today: string): Promise<cloud.BusinessSummary> {
+  const c = await ctx();
+  return withOfflineCopy(key(c, `summary:${today}`), () => cloud.businessSummary(c.businessId, today));
 }
 
 export async function getDocument(id: string): Promise<DocumentRecord | undefined> {
-  const c = await getCloudContext();
-  return c ? cloud.getDocument(id) : local.getDocument(id);
+  const c = await ctx();
+  return withOfflineCopy(key(c, `doc:${id}`), () => cloud.getDocument(id));
 }
 
 export async function createDocument(draft: DocumentDraft): Promise<DocumentRecord> {
-  const c = await getCloudContext();
-  return c ? cloud.createDocument(c.businessId, draft) : local.createDocument(draft);
+  const c = await ctx();
+  return cloud.createDocument(c.businessId, draft);
 }
 
 export async function updateDocument(id: string, draft: DocumentDraft): Promise<DocumentRecord> {
-  const c = await getCloudContext();
-  return c ? cloud.updateDocument(id, draft) : local.updateDocument(id, draft);
+  await ctx();
+  return cloud.updateDocument(id, draft);
 }
 
 export class OwnerOnlyError extends Error {
@@ -61,46 +86,64 @@ export class OwnerOnlyError extends Error {
 
 /** Throws OwnerOnlyError when a staff member tries (the attempt is logged for the owner). */
 export async function deleteDocument(id: string): Promise<void> {
-  const c = await getCloudContext();
-  if (!c) return local.deleteDocument(id);
+  await ctx();
   if (!(await cloud.deleteDocument(id))) throw new OwnerOnlyError();
 }
 
 export async function markInvoicePaid(invoiceId: string, method: PaymentMethod, today: string): Promise<DocumentRecord> {
-  const c = await getCloudContext();
-  return c ? cloud.markInvoicePaid(invoiceId, method, today) : local.markInvoicePaid(invoiceId, method, today);
+  await ctx();
+  return cloud.markInvoicePaid(invoiceId, method, today);
 }
 
 /** Record money received against an invoice or receipt (Pro). */
 export async function recordPayment(id: string, amountKobo: number, method: PaymentMethod, paidOn: string): Promise<DocumentRecord> {
-  const c = await getCloudContext();
-  return c ? cloud.recordPayment(id, amountKobo, method, paidOn) : local.recordPayment(id, amountKobo, method);
+  await ctx();
+  return cloud.recordPayment(id, amountKobo, method, paidOn);
 }
 
 export async function setDocumentTemplate(id: string, templateId: TemplateId): Promise<void> {
-  const c = await getCloudContext();
-  if (c) await cloud.setDocumentTemplate(id, templateId);
-  else await local.setDocumentTemplate(id, templateId);
+  await ctx();
+  await cloud.setDocumentTemplate(id, templateId);
+}
+
+/* ---------- Customers ---------- */
+
+export async function listCustomers(search: string, offset: number, limit = 30) {
+  const c = await ctx();
+  return withOfflineCopy(key(c, `customers:${search}:${offset}`), () => cloud.listCustomers(c.businessId, search, offset, limit));
+}
+
+export async function saveCustomer(id: string | null, name: string, phone: string): Promise<string> {
+  const c = await ctx();
+  return cloud.saveCustomer(c.businessId, id, name, phone);
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  await ctx();
+  return cloud.deleteCustomer(id);
+}
+
+export async function customerDocuments(customerId: string): Promise<DocumentRecord[]> {
+  const c = await ctx();
+  return withOfflineCopy(key(c, `customer-docs:${customerId}`), () => cloud.customerDocuments(c.businessId, customerId));
 }
 
 /* ---------- Expenses and profit (owner, Pro) ---------- */
 
 export async function listExpenses(): Promise<Expense[]> {
-  const c = await getCloudContext();
-  return c ? cloud.listExpenses(c.businessId) : local.listExpenses();
+  const c = await ctx();
+  return withOfflineCopy(key(c, "expenses"), () => cloud.listExpenses(c.businessId));
 }
 
 /** `photo`: a compressed JPEG to attach, null to remove, undefined to keep. */
 export async function saveExpense(id: string | null, draft: ExpenseDraft, photo?: Blob | null): Promise<Expense> {
-  const c = await getCloudContext();
-  if (c) return cloud.saveExpense(c.businessId, id, draft, photo);
-  const dataUrl = photo ? await blobToDataUrl(photo) : photo;
-  return local.saveExpense(id, draft, dataUrl);
+  const c = await ctx();
+  return cloud.saveExpense(c.businessId, id, draft, photo);
 }
 
 export async function deleteExpense(expense: Expense): Promise<void> {
-  const c = await getCloudContext();
-  return c ? cloud.deleteExpense(c.businessId, expense) : local.deleteExpense(expense.id);
+  const c = await ctx();
+  return cloud.deleteExpense(c.businessId, expense);
 }
 
 /** A viewable address for an expense photo. */
@@ -111,39 +154,37 @@ export async function expensePhotoUrl(expense: Expense): Promise<string | null> 
 }
 
 export async function getExpenseCategories(): Promise<string[]> {
-  const c = await getCloudContext();
-  return c ? cloud.getExpenseCategories(c.businessId) : local.getExpenseCategories();
+  const c = await ctx();
+  return withOfflineCopy(key(c, "categories"), () => cloud.getExpenseCategories(c.businessId));
 }
 
 export async function setExpenseCategories(categories: string[]): Promise<void> {
-  const c = await getCloudContext();
-  return c ? cloud.setExpenseCategories(c.businessId, categories) : local.setExpenseCategories(categories);
+  const c = await ctx();
+  return cloud.setExpenseCategories(c.businessId, categories);
 }
 
-/** Money received per day: payments (account) or receipts/invoices (phone). */
+/** Money received per day (from payments). */
 export async function listSales(): Promise<{ date: string; amountKobo: number }[]> {
-  const c = await getCloudContext();
-  return c ? cloud.listSales(c.businessId) : salesFromDocuments(await local.listDocuments());
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
+  const c = await ctx();
+  return withOfflineCopy(key(c, "sales"), () => cloud.listSales(c.businessId));
 }
 
 /* ---------- Quotations (Pro) ---------- */
 
 export async function setQuoteStatus(id: string, status: QuoteStatus): Promise<DocumentRecord> {
-  const c = await getCloudContext();
-  return c ? cloud.setQuoteStatus(id, status) : local.setQuoteStatus(id, status);
+  await ctx();
+  return cloud.setQuoteStatus(id, status);
 }
 
 /** One tap: make a linked invoice from a quote. Returns the new invoice. */
 export async function convertQuote(id: string, today: string): Promise<DocumentRecord> {
-  const c = await getCloudContext();
-  return c ? cloud.convertQuote(id, today) : local.convertQuote(id, today);
+  await ctx();
+  return cloud.convertQuote(id, today);
+}
+
+/* ---------- Your data ---------- */
+
+export async function exportMyData(): Promise<unknown> {
+  await ctx().catch(() => null); // export works for any signed-in person, even without a business
+  return cloud.exportMyData();
 }

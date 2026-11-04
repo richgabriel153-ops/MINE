@@ -70,17 +70,6 @@ export function PayLinkPanel({
       </div>
     );
 
-  if (access.mode === "local")
-    return (
-      <div className={box}>
-        {title}
-        <p className="text-sm text-muted-foreground">Pay Now links need a free InCeipt account, so payments can reach you.</p>
-        <Button asChild variant="outline">
-          <Link href="/account">Sign in or create account</Link>
-        </Button>
-      </div>
-    );
-
   if (!access.cloud?.payoutsConnected)
     return (
       <div className={box}>

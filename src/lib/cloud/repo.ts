@@ -376,3 +376,152 @@ export async function convertQuote(id: string, today: string): Promise<DocumentR
     throw err;
   }
 }
+
+/* ---------- Paged lists and totals (fast for large businesses) ---------- */
+
+export interface DocumentPageQuery {
+  /** "all" = receipts and invoices (quotes have their own page). */
+  type: "all" | "receipt" | "invoice" | "quote";
+  status?: "all" | "owing" | "paid" | "part" | "unpaid";
+  /** Number, customer name or phone. */
+  search?: string;
+  offset: number;
+  limit: number;
+}
+
+/** Characters with a meaning in the database's filter syntax are removed from searches. */
+export function cleanSearch(text: string): string {
+  return text.replace(/[,()*%\\:"']/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+}
+
+export async function listDocumentsPage(businessId: string, q: DocumentPageQuery): Promise<{ docs: DocumentRecord[]; hasMore: boolean }> {
+  let query = supabase().from("documents").select("*").eq("business_id", businessId);
+  query = q.type === "all" ? query.neq("type", "quote") : query.eq("type", q.type);
+  switch (q.status) {
+    case "owing":
+      query = query.neq("status", "paid").is("data->>receiptId", null);
+      break;
+    case "paid":
+      query = query.or("status.eq.paid,data->>receiptId.not.is.null");
+      break;
+    case "part":
+    case "unpaid":
+      query = query.eq("status", q.status).is("data->>receiptId", null);
+      break;
+  }
+  const s = cleanSearch(q.search ?? "");
+  if (s) {
+    const digits = s.replace(/\D/g, "");
+    const parts = [`number.ilike.*${s}*`, `customer_name.ilike.*${s}*`];
+    // Phones are stored as +234…; let people type 0803… too.
+    if (digits.length >= 4) parts.push(`data->customer->>phone.ilike.*${digits.replace(/^0/, "")}*`);
+    query = query.or(parts.join(","));
+  }
+  const { data, error } = await query
+    .order("issue_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .range(q.offset, q.offset + q.limit); // one extra row tells us if there's more
+  if (error) throw friendlyError(error);
+  const rows = (data as DocumentRow[]).map(rowToDocument);
+  return { docs: rows.slice(0, q.limit), hasMore: rows.length > q.limit };
+}
+
+export interface BusinessSummary {
+  weekKobo: number;
+  monthKobo: number;
+  owingKobo: number;
+  owingCount: number;
+}
+
+export async function businessSummary(businessId: string, today: string): Promise<BusinessSummary> {
+  const s = await call<{ week_kobo: number; month_kobo: number; owing_kobo: number; owing_count: number }>("business_summary", {
+    bid: businessId,
+    p_today: today,
+  });
+  return { weekKobo: Number(s.week_kobo), monthKobo: Number(s.month_kobo), owingKobo: Number(s.owing_kobo), owingCount: Number(s.owing_count) };
+}
+
+/* ---------- Customers ---------- */
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  updatedAt: string;
+}
+
+export async function listCustomers(businessId: string, search: string, offset: number, limit: number): Promise<{ customers: Customer[]; hasMore: boolean }> {
+  let query = supabase().from("customers").select("id, name, phone, updated_at").eq("business_id", businessId);
+  const s = cleanSearch(search);
+  if (s) {
+    const digits = s.replace(/\D/g, "");
+    query = query.or([`name.ilike.*${s}*`, ...(digits.length >= 4 ? [`phone.ilike.*${digits.replace(/^0/, "")}*`] : [])].join(","));
+  }
+  const { data, error } = await query.order("updated_at", { ascending: false }).range(offset, offset + limit);
+  if (error) throw friendlyError(error);
+  const rows = (data as { id: string; name: string; phone: string; updated_at: string }[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    updatedAt: r.updated_at,
+  }));
+  return { customers: rows.slice(0, limit), hasMore: rows.length > limit };
+}
+
+export async function saveCustomer(businessId: string, id: string | null, name: string, phone: string): Promise<string> {
+  return call<string>("save_customer", { bid: businessId, p_id: id, p_name: name, p_phone: phone });
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  await call("delete_customer", { p_id: id });
+}
+
+export async function customerDocuments(businessId: string, customerId: string): Promise<DocumentRecord[]> {
+  const { data, error } = await supabase()
+    .from("documents")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("customer_id", customerId)
+    .order("issue_date", { ascending: false })
+    .limit(200);
+  if (error) throw friendlyError(error);
+  return (data as DocumentRow[]).map(rowToDocument);
+}
+
+/* ---------- Your data (NDPA) ---------- */
+
+export async function exportMyData(): Promise<unknown> {
+  return call<unknown>("export_my_data", {});
+}
+
+export async function recordConsent(version: string): Promise<void> {
+  await call("record_consent", { p_version: version });
+}
+
+/**
+ * Copy records from this phone in batches. A record the server can't accept (for example a badly
+ * typed phone number from long ago) is skipped instead of stopping the rest. Returns what happened.
+ */
+export async function importLocalSafely(
+  businessId: string,
+  docs: DocumentRecord[],
+  counters: Counters,
+): Promise<{ copied: number; skipped: string[] }> {
+  let copied = 0;
+  const skipped: string[] = [];
+  for (let i = 0; i < docs.length; i += 100) {
+    const batch = docs.slice(i, i + 100);
+    try {
+      copied += await importLocal(businessId, batch, counters);
+    } catch {
+      for (const doc of batch) {
+        try {
+          copied += await importLocal(businessId, [doc], counters);
+        } catch {
+          skipped.push(doc.number);
+        }
+      }
+    }
+  }
+  return { copied, skipped };
+}

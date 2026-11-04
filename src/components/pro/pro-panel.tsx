@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { billingSummary, PLANS, YEARLY_SAVING_KOBO, type Plan } from "@/lib/billing";
 import { BRAND } from "@/lib/brand";
 import { accessToken, isCloudConfigured } from "@/lib/cloud/client";
-import { setProUnlocked } from "@/lib/db";
 import { formatNaira } from "@/lib/money";
 import { PRO_BENEFITS, PRO_COMPARISON } from "@/lib/pro";
 import { SAMPLE_PROFILE, SAMPLE_RECEIPT } from "@/lib/sample";
@@ -164,7 +163,7 @@ export function ProPanel() {
 
   const summary = billingSummary(access);
   const subscribed = access.proSource === "subscription";
-  const honoured = access.proSource === "legacy" || access.proSource === "comp";
+  const honoured = access.proSource === "comp";
   const cloud = access.cloud;
 
   return (
@@ -441,7 +440,6 @@ function UnlockCode() {
         setError(data.error ?? "That code didn't work. Check it and try again.");
         return;
       }
-      if (!access?.cloud) await setProUnlocked();
       await reload();
       window.scrollTo({ top: 0, behavior: "smooth" });
       toast.success("Welcome to InCeipt Pro!");
@@ -460,9 +458,9 @@ function UnlockCode() {
         </span>
         <div>
           <h2 id="unlock-title" className="font-bold">
-            Have an unlock code?
+            Have a Pro code?
           </h2>
-          <p className="text-sm text-muted-foreground">Early supporters&apos; codes still work.</p>
+          <p className="text-sm text-muted-foreground">Beta testers and early supporters: enter your code here.</p>
         </div>
       </div>
       <form onSubmit={unlock} noValidate className="mt-4 flex flex-col gap-3">

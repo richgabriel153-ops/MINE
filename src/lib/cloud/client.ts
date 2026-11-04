@@ -31,6 +31,34 @@ export function friendlyError(err: unknown): Error {
   if (/not_member/.test(message)) return new Error("You no longer have access to this business.");
   if (/already_paid/.test(message)) return new Error("This invoice has already been marked as paid.");
   if (/bad_amount/.test(message)) return new Error("That amount is more than what's left to pay.");
+  const bad = /invalid_input:([a-z_]+)/.exec(message);
+  if (bad) return new Error(INVALID_INPUT[bad[1]] ?? "Something in this form isn't right. Please check it and try again.");
+  if (/rate_limited/.test(message)) return new Error("Too many tries. Please wait a little and try again.");
   if (/Failed to fetch|NetworkError|network/i.test(message)) return new Error("No internet connection. Please try again when you're back online.");
   return new Error(message || "Something went wrong. Please try again.");
 }
+
+/** Plain-English messages for the server's input checks (invalid_input:<field>). */
+const INVALID_INPUT: Record<string, string> = {
+  items: "Add at least one item (200 at most).",
+  item_description: "Every item needs a description (up to 300 characters).",
+  item_quantity: "Every item needs a quantity above 0.",
+  item_price: "Check the item prices.",
+  customer_name: "The customer's name is too long (120 characters at most).",
+  customer_phone: "Enter a Nigerian mobile number, e.g. 0803 123 4567, or leave it empty.",
+  customer_exists: "You already have a customer with this phone number.",
+  discount: "Check the discount: it can't be more than 100% or below zero.",
+  delivery: "Check the delivery fee.",
+  amount_paid: "The amount paid must be more than ₦0 and less than the total. If it's all paid, choose Paid.",
+  method: "Choose how the customer paid.",
+  notes: "The notes are too long (1,000 characters at most).",
+  issue_date: "Choose a valid date.",
+  date: "Choose a valid date.",
+  due_date: "The due date can't be before the document date.",
+  too_large: "This document is too large. Try fewer or shorter items.",
+  logo: "That logo picture can't be used. Please choose another picture.",
+  logo_too_large: "That logo is too large. Please choose a smaller picture.",
+  brand_color: "Choose a colour from the list.",
+  account_number: "Bank account numbers have 10 digits.",
+  too_many_businesses: "You can own up to 5 businesses.",
+};
