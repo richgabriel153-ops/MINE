@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authMessage, cleanEmail, EMAIL_PATTERN, passwordProblem, safeNext } from "@/lib/auth";
+import { authMessage, cleanEmail, EMAIL_PATTERN, parseAuthRedirect, passwordProblem, safeNext } from "@/lib/auth";
 
 describe("passwords", () => {
   it("needs 8+ characters with letters and numbers", () => {
@@ -40,5 +40,31 @@ describe("auth messages", () => {
     expect(authMessage(new Error("For security purposes, you can only request this after 42 seconds"))).toMatch(/Too many tries/);
     expect(authMessage({ message: "Failed to fetch" })).toMatch(/No internet/);
     expect(authMessage(new Error("weird"))).toBe("Something went wrong. Please try again.");
+  });
+});
+
+
+describe("links in Supabase's emails", () => {
+  it("reads the login from a standard confirmation link", () => {
+    expect(parseAuthRedirect("#access_token=aaa&expires_in=3600&refresh_token=rrr&token_type=bearer&type=signup", "?next=%2Fhome")).toEqual({
+      kind: "session",
+      accessToken: "aaa",
+      refreshToken: "rrr",
+      type: "signup",
+    });
+  });
+
+  it("reads custom token_hash links", () => {
+    expect(parseAuthRedirect("", "?token_hash=abc&type=recovery")).toEqual({ kind: "verify", tokenHash: "abc", type: "recovery" });
+    expect(parseAuthRedirect("", "?token_hash=abc&type=evil")).toBeNull();
+  });
+
+  it("explains expired or used links in plain words", () => {
+    const r = parseAuthRedirect("#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired", "");
+    expect(r).toEqual({ kind: "error", message: expect.stringMatching(/expired or was already used/) });
+  });
+
+  it("ignores an ordinary page address", () => {
+    expect(parseAuthRedirect("", "?next=%2Fhome")).toBeNull();
   });
 });

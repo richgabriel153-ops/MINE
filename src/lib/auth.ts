@@ -37,3 +37,38 @@ export function authMessage(err: unknown): string {
   if (m.includes("failed to fetch") || m.includes("network")) return "No internet connection. Please try again when you're back online.";
   return "Something went wrong. Please try again.";
 }
+
+/** Where the links in Supabase's emails send people back to (must be in Supabase's Redirect URLs list). */
+export const CONFIRM_PATH = "/auth/confirm";
+
+export type AuthRedirect =
+  | { kind: "session"; accessToken: string; refreshToken: string; type: string }
+  | { kind: "verify"; tokenHash: string; type: "signup" | "recovery" | "magiclink" | "email" | "invite" | "email_change" }
+  | { kind: "error"; message: string }
+  | null;
+
+/**
+ * Read what an email link brought back in the address:
+ * "#access_token=…&refresh_token=…&type=signup" (standard Supabase emails),
+ * "?token_hash=…&type=recovery" (custom email links), or "#error=…&error_description=…".
+ */
+export function parseAuthRedirect(hash: string, search: string): AuthRedirect {
+  const h = new URLSearchParams(hash.replace(/^#/, ""));
+  const q = new URLSearchParams(search.replace(/^\?/, ""));
+  const errorText = h.get("error_description") ?? q.get("error_description") ?? h.get("error") ?? q.get("error");
+  if (errorText) {
+    const code = h.get("error_code") ?? q.get("error_code") ?? "";
+    if (/expired/i.test(code) || /expired|invalid/i.test(errorText))
+      return { kind: "error", message: "This link has expired or was already used. Ask for a new one below." };
+    return { kind: "error", message: errorText.replace(/\+/g, " ") };
+  }
+  const accessToken = h.get("access_token");
+  const refreshToken = h.get("refresh_token");
+  if (accessToken && refreshToken) return { kind: "session", accessToken, refreshToken, type: h.get("type") ?? "" };
+  const tokenHash = q.get("token_hash");
+  const type = q.get("type");
+  const allowed = ["signup", "recovery", "magiclink", "email", "invite", "email_change"] as const;
+  if (tokenHash && type && (allowed as readonly string[]).includes(type))
+    return { kind: "verify", tokenHash, type: type as (typeof allowed)[number] };
+  return null;
+}

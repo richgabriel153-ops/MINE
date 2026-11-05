@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Field } from "@/components/form/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { authMessage, cleanEmail, EMAIL_PATTERN, passwordProblem, safeNext, TERMS_VERSION } from "@/lib/auth";
+import { authMessage, cleanEmail, CONFIRM_PATH, EMAIL_PATTERN, passwordProblem, safeNext, TERMS_VERSION } from "@/lib/auth";
 import { isCloudConfigured, supabase } from "@/lib/cloud/client";
 import { myBusinesses } from "@/lib/cloud/repo";
 import { setActiveBusinessId } from "@/lib/cloud/session";
@@ -20,8 +20,13 @@ export type AuthMode = "login" | "signup" | "forgot" | "code";
 /** What the form is waiting for: the first screen, or a 6-digit code from an email. */
 type Step = "form" | "verify-signup" | "verify-recovery" | "verify-login" | "new-password";
 
+/** Where an email link should bring someone back to (keeps where they were going). */
+function linkBack(next: string): string {
+  return `${window.location.origin}${CONFIRM_PATH}?next=${encodeURIComponent(next)}`;
+}
+
 /** After a successful sign-in: go to the business (or set one up / choose one on the account page). */
-async function afterSignIn(next: string) {
+export async function afterSignIn(next: string) {
   const businesses = await myBusinesses().catch(() => []);
   if (businesses.length === 1) {
     setActiveBusinessId(businesses[0].business_id);
@@ -31,7 +36,7 @@ async function afterSignIn(next: string) {
   }
 }
 
-function PasswordInput({
+export function PasswordInput({
   id,
   value,
   onChange,
@@ -125,9 +130,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         const { error: err } = await sb.signInWithPassword({ email: clean, password });
         if (err) {
           if (/email not confirmed/i.test(err.message)) {
-            await sb.resend({ type: "signup", email: clean });
+            await sb.resend({ type: "signup", email: clean, options: { emailRedirectTo: linkBack(next) } });
             setStep("verify-signup");
-            toast.message(`Confirm your email: we sent a code to ${clean}`);
+            toast.message(`Confirm your email: check ${clean} for our message`);
             return;
           }
           throw err;
@@ -139,7 +144,11 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       if (problem) return setError(problem);
       if (!agreed) return setError("Please tick the box to agree to the Terms and Privacy Policy.");
       void run(async () => {
-        const { data, error: err } = await sb.signUp({ email: clean, password, options: { data: { terms_version: TERMS_VERSION } } });
+        const { data, error: err } = await sb.signUp({
+          email: clean,
+          password,
+          options: { data: { terms_version: TERMS_VERSION }, emailRedirectTo: linkBack(next) },
+        });
         if (err) throw err;
         if (data.session) {
           // Email confirmation is switched off in Supabase: already signed in.
@@ -148,21 +157,21 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           return;
         }
         setStep("verify-signup");
-        toast.success(`We sent a 6-digit code to ${clean}`);
+        toast.success(`Check your email: we sent a message to ${clean}`);
       });
     } else if (mode === "forgot") {
       void run(async () => {
-        const { error: err } = await sb.resetPasswordForEmail(clean);
+        const { error: err } = await sb.resetPasswordForEmail(clean, { redirectTo: linkBack(next) });
         if (err) throw err;
         setStep("verify-recovery");
-        toast.success(`If ${clean} has an account, a code is on its way`);
+        toast.success(`If ${clean} has an account, an email is on its way`);
       });
     } else {
       void run(async () => {
-        const { error: err } = await sb.signInWithOtp({ email: clean, options: { shouldCreateUser: false } });
+        const { error: err } = await sb.signInWithOtp({ email: clean, options: { shouldCreateUser: false, emailRedirectTo: linkBack(next) } });
         if (err && !/signups not allowed|user not found/i.test(err.message)) throw err;
         setStep("verify-login");
-        toast.success(`If ${clean} has an account, a code is on its way`);
+        toast.success(`If ${clean} has an account, an email is on its way`);
       });
     }
   };
@@ -197,48 +206,25 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     void run(async () => {
       const { error: err } =
         step === "verify-signup"
-          ? await sb.resend({ type: "signup", email })
+          ? await sb.resend({ type: "signup", email, options: { emailRedirectTo: linkBack(next) } })
           : step === "verify-recovery"
-            ? await sb.resetPasswordForEmail(email)
-            : await sb.signInWithOtp({ email, options: { shouldCreateUser: false } });
+            ? await sb.resetPasswordForEmail(email, { redirectTo: linkBack(next) })
+            : await sb.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: linkBack(next) } });
       if (err) throw err;
       toast.success("New code sent. Check your email (and spam folder).");
     });
   };
 
-  const submitNewPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    const problem = passwordProblem(password);
-    if (problem) return setError(problem);
-    void run(async () => {
-      const { error: err } = await supabase().auth.updateUser({ password });
-      if (err) throw err;
-      toast.success("Password changed. You're logged in.");
-      await afterSignIn(next);
-    });
-  };
-
   const withNext = (path: string) => `${path}${next !== "/home" ? `?next=${encodeURIComponent(next)}` : ""}`;
 
-  if (step === "new-password") {
-    return (
-      <form onSubmit={submitNewPassword} noValidate className="flex flex-col gap-4">
-        <Field id="new-password" label="New password" error={error} hint="At least 8 characters, with letters and numbers.">
-          <PasswordInput id="new-password" value={password} onChange={(v) => (setPassword(v), setError(null))} autoComplete="new-password" invalid={!!error} />
-        </Field>
-        <Button type="submit" size="lg" disabled={busy}>
-          {busy && <Loader2 className="animate-spin" />} Save new password
-        </Button>
-      </form>
-    );
-  }
+  if (step === "new-password") return <NewPasswordForm next={next} />;
 
   if (step !== "form") {
     return (
       <form onSubmit={submitCode} noValidate className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">
-          Enter the 6-digit code we sent to <strong className="text-foreground">{email}</strong>. It can take a minute; check your
-          spam folder too.
+          We sent an email to <strong className="text-foreground">{email}</strong>. Type the 6-digit code from it here, or just tap
+          the button in the email. It can take a minute; check your spam folder too.
         </p>
         <Field id="auth-code" label="Code" error={error}>
           <Input
@@ -367,6 +353,39 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           </Link>
         )}
       </nav>
+    </form>
+  );
+}
+
+/** Choose a new password (after opening a reset link from the email). */
+export function NewPasswordForm({ next }: { next: string }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const problem = passwordProblem(password);
+    if (problem) return setError(problem);
+    setBusy(true);
+    setError(null);
+    try {
+      const { error: err } = await supabase().auth.updateUser({ password });
+      if (err) throw err;
+      toast.success("Password changed. You're logged in.");
+      await afterSignIn(next);
+    } catch (err) {
+      setError(authMessage(err));
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <Field id="new-password" label="New password" error={error} hint="At least 8 characters, with letters and numbers.">
+        <PasswordInput id="new-password" value={password} onChange={(v) => (setPassword(v), setError(null))} autoComplete="new-password" invalid={!!error} />
+      </Field>
+      <Button type="submit" size="lg" disabled={busy}>
+        {busy && <Loader2 className="animate-spin" />} Save new password
+      </Button>
     </form>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 
+import { AuthLinkCatcher } from "@/components/account/auth-link-catcher";
 import { ErrorListener } from "@/components/errors/error-listener";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import { Toaster } from "@/components/ui/sonner";
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Toaster />
         <ServiceWorker />
         <ErrorListener />
+        <AuthLinkCatcher />
       </body>
     </html>
   );
