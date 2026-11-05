@@ -37,7 +37,7 @@ export function AccountPanel() {
 
   useEffect(() => {
     if (!access) return;
-    if (access.mode === "cloud") return; // signed in with a business: shown below
+    if (access.cloud) return; // signed in with a business: shown below
     let active = true;
     (async () => {
       let s: State;
@@ -55,7 +55,11 @@ export function AccountPanel() {
         }
       }
       if (active) setState(s);
-    })();
+    })().catch(async () => {
+      // Never stay stuck on "Loading": if the old phone records can't be read, set up without them.
+      const email = await getSignedInEmail().catch(() => null);
+      if (active) setState(email ? { kind: "setup", email, localCount: 0, legacyPro: false, businessName: "" } : { kind: "signedOut" });
+    });
     return () => {
       active = false;
     };
