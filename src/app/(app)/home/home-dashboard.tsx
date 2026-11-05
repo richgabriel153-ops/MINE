@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, ChevronRight, FileText, ReceiptText } from "lucide-react";
+import { BadgeCheck, ChevronRight, FileText, ImagePlus, ReceiptText } from "lucide-react";
 
 import { ProLock, useAccess } from "@/components/access/access-provider";
 import { DocumentCard } from "@/components/history/document-card";
@@ -12,6 +12,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { lagosDate } from "@/lib/dates";
 import { getBusinessSummary, listDocumentsPage, type BusinessSummary } from "@/lib/db";
 import { formatNaira } from "@/lib/money";
+import { hasBankDetails } from "@/lib/profile";
 import type { DocumentRecord } from "@/lib/types";
 
 export function HomeDashboard() {
@@ -59,16 +60,21 @@ export function HomeDashboard() {
         </div>
       </header>
 
-      {profile && !profile.name && (
-        <div className="rounded-xl border border-primary/30 bg-secondary p-4 text-sm">
-          <p className="mb-3">
-            <strong>Start here:</strong> add your business name, logo and bank details. They&apos;ll appear on every
-            receipt.
-          </p>
-          <Button asChild size="sm">
-            <Link href="/profile?next=/home">Add business details</Link>
-          </Button>
-        </div>
+      {profile && owner && (!profile.name || !profile.logo || !hasBankDetails(profile)) && (
+        <Link
+          href="/profile?next=/home"
+          className="press flex items-center gap-3 rounded-xl border border-primary/30 bg-secondary p-4 text-sm active:bg-accent"
+        >
+          <ImagePlus className="size-6 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <strong className="block">{profile.name ? "Finish your business details" : "Start here: add your business details"}</strong>
+            <span className="text-muted-foreground">
+              Add your {[!profile.logo && "logo", !hasBankDetails(profile) && "bank details", !profile.name && "business name"].filter(Boolean).join(" and ")}{" "}
+              so they print on every receipt and invoice.
+            </span>
+          </span>
+          <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
+        </Link>
       )}
 
       {summary && owner && (
