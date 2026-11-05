@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import { isValidUnlockCode } from "@/lib/unlock-codes";
 import { clientIp, rateLimit, tooMany } from "@/lib/server/rate-limit";
-import { json, memberRole, requestUser, supabaseAdmin } from "@/lib/server/supabase-admin";
+import { json, memberRole, requestUser, ServerSetupError, supabaseAdmin } from "@/lib/server/supabase-admin";
 
 const MESSAGES: Record<string, string> = {
   invalid_code: "That code didn't work. Check it and try again.",
@@ -30,7 +30,13 @@ export async function POST(request: Request) {
   }
   if (!code.trim() || !/^[0-9a-f-]{36}$/i.test(businessId)) return json({ ok: false, error: "Enter your code." }, 400);
 
-  const user = await requestUser(request);
+  let user;
+  try {
+    user = await requestUser(request);
+  } catch (err) {
+    if (err instanceof ServerSetupError) return json({ ok: false, error: err.message }, 503);
+    throw err;
+  }
   if (!user) return json({ ok: false, error: "Please log in again." }, 401);
   // Codes are worth guessing, so refuse if the limiter can't be checked.
   if (!(await rateLimit(`unlock-ip:${clientIp(request)}`, 3600, 30, { failOpen: false }))) return tooMany();

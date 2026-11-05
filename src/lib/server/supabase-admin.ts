@@ -12,6 +12,13 @@ export function isServerCloudConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+/** The server's own Supabase key is wrong or missing (not the user's fault). */
+export class ServerSetupError extends Error {
+  constructor() {
+    super("The server isn't set up correctly yet. Please try again later.");
+  }
+}
+
 export function supabaseAdmin(): SupabaseClient {
   if (!isServerCloudConfigured()) throw new Error("Supabase isn't configured on the server.");
   admin ??= createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -26,7 +33,15 @@ export async function requestUser(request: Request): Promise<User | null> {
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (!token || !isServerCloudConfigured()) return null;
   const { data, error } = await supabaseAdmin().auth.getUser(token);
-  return error ? null : data.user;
+  if (error) {
+    // A wrong SUPABASE_SERVICE_ROLE_KEY makes every check fail; say so instead of "log in again".
+    if (/api key/i.test(error.message)) {
+      console.error("SUPABASE_SERVICE_ROLE_KEY is not accepted by Supabase. Copy the secret key again into Vercel.");
+      throw new ServerSetupError();
+    }
+    return null;
+  }
+  return data.user;
 }
 
 /** The caller's active role in a business ("owner" | "staff"), or null. */
