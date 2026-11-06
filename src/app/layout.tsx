@@ -7,15 +7,15 @@ import { ServiceWorker } from "@/components/pwa/service-worker";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-// Atkinson Hyperlegible Next (Latin), self-hosted, ~34 KB. Designed for low vision: clear in sunlight on small screens.
+// Rubik (Latin), self-hosted: friendly, chunky numbers with a plain zero. Loaded once, cached forever.
 const body = localFont({
-  src: "../fonts/atkinson-next-latin.woff2",
+  src: "../fonts/rubik-latin.woff2",
   variable: "--font-body",
-  weight: "200 800",
+  weight: "300 900",
   display: "swap",
 });
 
-// Just the ₦ glyph (~1 KB; Atkinson has none), so ₦ looks the same on every phone.
+// Just the ₦ glyph (~1 KB; Rubik has none), so ₦ looks the same on every phone.
 const naira = localFont({
   src: "../fonts/inter-naira.woff2",
   variable: "--font-naira",

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
+import { BrandMark } from "@/components/brand/brand-mark";
 import { ArrowRight, CloudOff, Lock, MessageCircle, ReceiptText, Smartphone, Store, Wallet } from "lucide-react";
 
 import { InstallButton } from "@/components/pwa/install-button";
@@ -44,9 +46,7 @@ export default function LandingPage() {
     <div className="min-h-dvh overflow-x-clip bg-background">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ReceiptText className="size-5" />
-          </span>
+          <BrandMark />
           InCeipt
         </Link>
         <Link href="/signin" className="flex min-h-11 items-center text-sm font-semibold text-primary">

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ReceiptText } from "lucide-react";
 
+import { BrandMark } from "@/components/brand/brand-mark";
 import { LEGAL, LEGAL_PAGES } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 
@@ -10,9 +10,7 @@ export function LegalPage({ title, current, children }: { title: string; current
     <div className="min-h-dvh bg-background">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ReceiptText className="size-5" />
-          </span>
+          <BrandMark />
           InCeipt
         </Link>
         <Link href="/home" className="text-sm font-semibold text-primary">

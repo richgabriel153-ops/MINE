@@ -34,7 +34,7 @@ InCeipt replaces handwritten receipt books and screenshot "receipts". A seller m
 ## Brand Commitments
 - Name: InCeipt. Personality: bold and energetic, confident and punchy; it should make a small seller feel like a big brand.
 - Colour palette chosen by the owner: "Lagoon" (deep teal #0B5F5A primary, coral #E86A33 accent). No indigo/purple.
-- Font: Atkinson Hyperlegible Next (chosen for legibility in sunlight); ₦ glyph from a small Inter subset.
+- Font: Rubik (chosen by the owner: friendly, chunky numbers, plain zero); ₦ glyph from a small Inter subset. Atkinson Hyperlegible was dropped because of its slashed zero.
 - Avoid the generic AI look: no purple gradients, glassy cards, emoji icons, or a centred hero with three boxes.
 
 ## Evidence on Hand
