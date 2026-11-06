@@ -42,14 +42,14 @@ export function BottomNav() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "press flex h-16 flex-col items-center justify-center gap-0.5 text-xs font-semibold text-muted-foreground md:h-14 md:flex-row md:gap-2 md:text-sm",
-                  active && "text-primary",
+                  "press flex h-16 flex-col items-center justify-center gap-0.5 text-xs font-bold text-muted-foreground md:h-14 md:flex-row md:gap-2 md:text-sm",
+                  active && "text-primary [&_svg]:stroke-[2.6]",
                 )}
               >
                 <span
                   className={cn(
                     "flex h-8 w-11 items-center justify-center rounded-xl md:h-7 md:w-7 md:rounded-lg",
-                    isNew && "bg-primary text-primary-foreground",
+                    isNew && "border-2 border-ink bg-highlight text-ink",
                   )}
                 >
                   <Icon className="size-6 md:size-5" strokeWidth={isNew ? 2.6 : active ? 2.4 : 2} aria-hidden />

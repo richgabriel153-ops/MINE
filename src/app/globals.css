@@ -7,7 +7,7 @@
   color-scheme: light;
   --radius: 0.75rem;
   /* InCeipt "Lagoon": deep teal with a coral brand mark. Contrast-checked for sunlight on cheap screens. */
-  --background: #ffffff;
+  --background: #eef4f3;
   --foreground: #0e1d1c;
   --card: #ffffff;
   --card-foreground: #0e1d1c;
@@ -15,19 +15,25 @@
   --popover-foreground: #0e1d1c;
   --primary: #0b5f5a;
   --primary-foreground: #ffffff;
-  --secondary: #eff5f4;
+  --secondary: #e1edeb;
   --secondary-foreground: #0b4f4b;
-  --muted: #eff5f4;
-  --muted-foreground: #4d5e5c;
-  --accent: #e3eeec;
+  --muted: #e4eeec;
+  --muted-foreground: #46585a;
+  --accent: #dbe9e6;
   --accent-foreground: #0e1d1c;
   --destructive: #b42318;
-  --border: #d3e0de;
-  --input: #84928f;
+  --border: #cfdedb;
+  --input: #7d8d8a;
   --ring: #0b5f5a;
   --success: #11764a;
   --warning: #8a5300;
   --highlight: #e86a33;
+  /* Signboard world */
+  --ink: #0e1d1c;
+  --sign: #0b5f5a;
+  --sign-deep: #084a46;
+  --on-sign-muted: #bfe0da;
+  --on-sign-warm: #ffb38f;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -54,6 +60,11 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-highlight: var(--highlight);
+  --color-ink: var(--ink);
+  --color-sign: var(--sign);
+  --color-sign-deep: var(--sign-deep);
+  --color-on-sign-muted: var(--on-sign-muted);
+  --color-on-sign-warm: var(--on-sign-warm);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -72,6 +83,21 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     overscroll-behavior-y: none;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--highlight) 35%, transparent);
+    color: var(--ink);
+  }
+  input,
+  textarea {
+    caret-color: var(--primary);
+  }
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--highlight) 75%, transparent);
+    outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 3px;
   }
   /* Taps fire at once (no double-tap-zoom wait); zoom by pinch still works. */
   a,

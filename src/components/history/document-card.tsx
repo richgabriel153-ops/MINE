@@ -11,33 +11,26 @@ import type { DocumentRecord } from "@/lib/types";
 const TYPE_NAME = { receipt: "Receipt", invoice: "Invoice", quote: "Quote" } as const;
 
 /** One record in a list: who, which number and when on the left; amount and payment status on the right. */
-export function DocumentCard({ doc, actions }: { doc: DocumentRecord; actions?: React.ReactNode }) {
+export function DocumentCard({ doc, actions, variant = "card" }: { doc: DocumentRecord; actions?: React.ReactNode; variant?: "card" | "row" }) {
   const totals = computeTotals(doc);
   const owing = owingKobo(doc);
   const colour = STATUS_COLOUR[doc.status];
   const showStatus = doc.type !== "quote";
   return (
-    <div className="flex items-center rounded-xl border bg-card">
+    <div className={variant === "card" ? "flex items-center rounded-2xl border bg-card" : "flex items-center"}>
       <Link
         href={`/view?id=${doc.id}`}
-        className="press flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-xl py-3 pl-4 active:bg-muted"
+        className="press flex min-h-[4.25rem] min-w-0 flex-1 items-center gap-3 rounded-2xl py-3 pl-4 active:bg-muted"
       >
         <div className="min-w-0 flex-1">
-          <div className="truncate font-semibold">{doc.customer.name || TYPE_NAME[doc.type]}</div>
+          <div className="truncate font-bold">{doc.customer.name || TYPE_NAME[doc.type]}</div>
           <div className="truncate text-sm text-muted-foreground">
             {doc.number} · {formatDate(doc.issueDate)}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 text-right">
-          <div className="amount font-bold">{formatNaira(totals.totalKobo)}</div>
-          {showStatus && (
-            <span
-              className="rounded px-1.5 py-0.5 text-[11px] leading-none font-bold tracking-wide"
-              style={{ color: colour, backgroundColor: `${colour}14` }}
-            >
-              {STATUS_LABEL[doc.status]}
-            </span>
-          )}
+          <div className="amount text-[1.05rem] font-extrabold">{formatNaira(totals.totalKobo)}</div>
+          {showStatus && <Stamp colour={colour}>{STATUS_LABEL[doc.status]}</Stamp>}
           {doc.status === "part" && owing > 0 && (
             <div className="amount text-xs font-semibold text-destructive">Bal. {formatNaira(owing)}</div>
           )}
@@ -47,5 +40,17 @@ export function DocumentCard({ doc, actions }: { doc: DocumentRecord; actions?: 
       </Link>
       {actions}
     </div>
+  );
+}
+
+/** A bold rubber-stamp label for payment status. */
+export function Stamp({ colour, children }: { colour: string; children: React.ReactNode }) {
+  return (
+    <span
+      className="rounded-[5px] border-[1.5px] px-1.5 py-[3px] text-[10.5px] leading-none font-extrabold tracking-[0.06em] uppercase"
+      style={{ color: colour, borderColor: colour, backgroundColor: `${colour}12` }}
+    >
+      {children}
+    </span>
   );
 }
