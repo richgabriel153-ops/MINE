@@ -1,0 +1,165 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  color-scheme: light;
+  --radius: 0.75rem;
+  /* InCeipt "Lagoon": deep teal with a coral brand mark. Contrast-checked for sunlight on cheap screens. */
+  --background: #eef4f3;
+  --foreground: #0e1d1c;
+  --card: #ffffff;
+  --card-foreground: #0e1d1c;
+  --popover: #ffffff;
+  --popover-foreground: #0e1d1c;
+  --primary: #0b5f5a;
+  --primary-foreground: #ffffff;
+  --secondary: #e1edeb;
+  --secondary-foreground: #0b4f4b;
+  --muted: #e4eeec;
+  --muted-foreground: #46585a;
+  --accent: #dbe9e6;
+  --accent-foreground: #0e1d1c;
+  --destructive: #b42318;
+  --border: #cfdedb;
+  --input: #7d8d8a;
+  --ring: #0b5f5a;
+  --success: #11764a;
+  --warning: #8a5300;
+  --highlight: #e86a33;
+  /* Signboard world */
+  --ink: #0e1d1c;
+  --sign: #0b5f5a;
+  --sign-deep: #084a46;
+  --on-sign-muted: #bfe0da;
+  --on-sign-warm: #ffb38f;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@theme inline {
+  --font-sans: var(--font-body), var(--font-naira), ui-sans-serif, system-ui, Roboto, "Segoe UI", Arial, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-highlight: var(--highlight);
+  --color-ink: var(--ink);
+  --color-sign: var(--sign);
+  --color-sign-deep: var(--sign-deep);
+  --color-on-sign-muted: var(--on-sign-muted);
+  --color-on-sign-warm: var(--on-sign-warm);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    overscroll-behavior-y: none;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--highlight) 35%, transparent);
+    color: var(--ink);
+  }
+  input,
+  textarea {
+    caret-color: var(--primary);
+  }
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--highlight) 75%, transparent);
+    outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+  /* Taps fire at once (no double-tap-zoom wait); zoom by pinch still works. */
+  a,
+  button,
+  [role="button"],
+  label,
+  summary,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+  button,
+  [role="button"],
+  [role="tab"],
+  summary {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* 16px or more stops iPhones zooming into a field on focus. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+  /* Press feedback: a quick, small squeeze that follows the finger. */
+  .press {
+    transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+    .press:active {
+      transform: none;
+    }
+  }
+  /* Hide number spinners: we use text inputs with inputmode instead. */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Naira amounts: equal-width digits so columns line up. */
+@utility amount {
+  font-variant-numeric: tabular-nums;
+}
