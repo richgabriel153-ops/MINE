@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/* Palette dealt by the Taste skill: forest + pale lime. */
+@theme {
+  --color-bg: #0f1f10;
+  --color-surface: #162a17;
+  --color-raised: #1e3620;
+  --color-line: #2a4529;
+  --color-ink: #ffffff;
+  --color-muted: #9aa39a;
+  --color-lime: #c6f19d;
+  --color-lime-ink: #0f1f10;
+  --color-danger: #ff8a7a;
+
+  --font-display: var(--font-funnel-display), system-ui, sans-serif;
+  --font-sans: var(--font-funnel-sans), system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, Menlo, monospace;
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-lime);
+  color: var(--color-lime-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-lime);
+  outline-offset: 3px;
+}
+
+/* Buttons step on hover and press on click (pointer devices only for hover). */
+.press {
+  transition:
+    transform 160ms var(--ease-out-quart),
+    background-color 160ms var(--ease-out-quart),
+    color 160ms var(--ease-out-quart),
+    opacity 160ms var(--ease-out-quart);
+}
+@media (hover: hover) and (pointer: fine) {
+  .press:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+}
+.press:not(:disabled):active {
+  transform: scale(0.96);
+  transition-duration: 80ms;
+}
+
+.mirror {
+  transform: scaleX(-1);
+}
+
+@keyframes ping-soft {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.ping-soft {
+  animation: ping-soft 1.8s var(--ease-out-quart) infinite;
+}
+
+@keyframes rise {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.rise {
+  animation: rise 220ms var(--ease-out-quart) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
