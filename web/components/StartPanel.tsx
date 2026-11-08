@@ -68,15 +68,13 @@ export default function StartPanel() {
       <button
         type="button"
         onClick={onStart}
-        aria-disabled={!agreed}
-        className={`press flex h-14 w-full items-center justify-center gap-2 rounded-full text-[17px] font-medium sm:w-auto sm:self-start sm:px-9 ${
-          agreed ? "bg-lime text-lime-ink hover:bg-[#d4f6b3]" : "bg-raised text-muted"
-        }`}
+        aria-describedby={agreed ? undefined : `${id}-hint`}
+        className="press flex h-14 w-full items-center justify-center gap-2 rounded-full bg-lime text-[17px] font-medium text-lime-ink hover:bg-[#d4f6b3] sm:w-auto sm:self-start sm:px-9"
       >
         Start chatting
         <NextIcon className="size-5" />
       </button>
-      <p className={`text-[13px] ${nudge ? "text-danger" : "sr-only"}`} role="status">
+      <p id={`${id}-hint`} className={`text-[13px] ${nudge ? "text-danger" : "sr-only"}`} role="status">
         {nudge ? "Tick the box to confirm you are 18 or older." : ""}
       </p>
     </div>

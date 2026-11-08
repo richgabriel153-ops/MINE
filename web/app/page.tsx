@@ -29,10 +29,10 @@ export default function Home() {
             </p>
           </div>
           <StartPanel />
-          <ul className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[12px] uppercase tracking-[0.06em] text-muted">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[14px] text-muted">
             {facts.map((f) => (
               <li key={f} className="flex items-center gap-2">
-                <span className="size-1 rounded-full bg-lime" />
+                <span className="size-1.5 rounded-full bg-lime" />
                 {f}
               </li>
             ))}

@@ -48,6 +48,8 @@ export default function OnlineCount({ count, className = "" }: { count?: number 
         "Server offline"
       ) : value === null || value === undefined ? (
         "Counting…"
+      ) : value === 0 ? (
+        "Live now"
       ) : (
         <span>
           <span className="text-ink tabular-nums">{value.toLocaleString("en-US")}</span> online

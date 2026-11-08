@@ -107,7 +107,7 @@ export default function PermissionScreen(p: Props) {
                 Check your light and framing. When you start, Linkup pairs you with the next free stranger.
               </p>
               <button type="button" onClick={p.onStart} className="press flex h-14 items-center justify-center gap-2 rounded-full bg-lime text-[17px] font-medium text-lime-ink hover:bg-[#d4f6b3] md:self-start md:px-9">
-                Find a stranger <NextIcon className="size-5" />
+                Start chatting <NextIcon className="size-5" />
               </button>
             </>
           ) : (

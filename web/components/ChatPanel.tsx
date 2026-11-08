@@ -8,11 +8,12 @@ type Props = {
   messages: ChatMessage[];
   ready: boolean;
   connected: boolean;
+  ended?: boolean;
   onSend: (text: string) => boolean;
   className?: string;
 };
 
-export default function ChatPanel({ messages, ready, connected, onSend, className = "" }: Props) {
+export default function ChatPanel({ messages, ready, connected, ended, onSend, className = "" }: Props) {
   const [text, setText] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +64,7 @@ export default function ChatPanel({ messages, ready, connected, onSend, classNam
           maxLength={500}
           autoComplete="off"
           enterKeyHint="send"
-          placeholder={ready ? "Type a message" : "Waiting for a stranger…"}
+          placeholder={ready ? "Type a message" : ended ? "Chat ended" : "Waiting for a stranger…"}
           className="h-11 min-w-0 flex-1 rounded-full bg-surface px-4 text-[16px] text-ink outline-none placeholder:text-muted/80 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-lime disabled:opacity-60"
         />
         <button

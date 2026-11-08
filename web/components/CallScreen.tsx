@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ChatMessage, LeftReason, Phase, ServerStatus } from "@/lib/useLinkup";
 import ChatPanel from "./ChatPanel";
 import VideoView from "./VideoView";
@@ -31,7 +31,7 @@ type Props = {
 };
 
 const leftCopy: Record<LeftReason, string> = {
-  skipped: "The stranger moved on to someone else.",
+  skipped: "The stranger ended the chat.",
   stopped: "The stranger ended the chat.",
   disconnected: "The stranger's connection dropped.",
   failed: "The connection to the stranger failed.",
@@ -46,6 +46,34 @@ export default function CallScreen(p: Props) {
   const canReport = inCall || p.phase === "left";
   const showRemote = connected && !!p.remoteStream;
 
+  // A short "Connected" moment when video starts, so the match lands.
+  const [justConnected, setJustConnected] = useState(false);
+  useEffect(() => {
+    if (!connected) return;
+    setJustConnected(true);
+    const t = setTimeout(() => setJustConnected(false), 2400);
+    return () => clearTimeout(t);
+  }, [connected]);
+
+  // Desktop shortcuts: Esc = Next, M = mic, V = camera (never while typing or in a dialog).
+  const { onNext, onToggleMic, onToggleCam, phase } = p;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (document.querySelector("dialog[open]")) return;
+      const k = e.key.toLowerCase();
+      if (k === "escape" && phase !== "waiting" && phase !== "stopped") onNext();
+      else if (k === "m") onToggleMic();
+      else if (k === "v") onToggleCam();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onNext, onToggleMic, onToggleCam, phase]);
+
   const unblockSound = () => {
     document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
     setSoundBlocked(false);
@@ -54,7 +82,7 @@ export default function CallScreen(p: Props) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden lg:flex-row lg:gap-3 lg:p-3">
       {/* Stage: stranger large, me picture-in-picture */}
-      <div className="flex min-h-0 flex-[1.45] flex-col lg:flex-1">
+      <div className="flex min-h-0 flex-[2.3] flex-col lg:flex-1">
         <div className="relative min-h-0 flex-1 overflow-hidden bg-surface lg:rounded-[28px]">
           <VideoView
             stream={p.remoteStream}
@@ -70,9 +98,10 @@ export default function CallScreen(p: Props) {
           {/* Top bar */}
           <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
             <div className="flex flex-col items-start gap-2">
-              <Link href="/" aria-label="Leave and go to Linkup home" className="rounded-full bg-bg/60 px-3 py-1.5 backdrop-blur">
+              <span className="rounded-full bg-bg/60 px-3 py-1.5 backdrop-blur">
                 <Logo className="!text-[16px]" />
-              </Link>
+              </span>
+              {justConnected && !p.weak && <Chip tone="live">Connected</Chip>}
               {connected && p.weak && <Chip tone="warn">Weak connection…</Chip>}
               {connected && !p.remoteMicOn && <Chip>Stranger muted</Chip>}
               {p.serverStatus === "reconnecting" && <Chip tone="warn">Reconnecting to server…</Chip>}
@@ -111,10 +140,20 @@ export default function CallScreen(p: Props) {
           )}
         </div>
 
-        {/* Controls */}
+        {/* Controls: Stop is kept away from Next so a skip never ends the session by accident */}
         <div className="flex items-center gap-2 bg-bg px-3 py-2.5 lg:px-0 lg:pb-0 lg:pt-3">
+          {p.phase !== "stopped" && (
+            <button
+              type="button"
+              onClick={p.onStop}
+              className="press flex h-12 shrink-0 items-center gap-1.5 rounded-full bg-raised px-4 text-[15px] hover:bg-line"
+            >
+              <StopIcon className="size-4" /> Stop
+            </button>
+          )}
+          <span aria-hidden className="mx-0.5 h-6 w-px bg-line" />
           <IconButton
-            label={p.micOn ? "Mute microphone" : "Unmute microphone"}
+            label={p.micOn ? "Mute microphone (M)" : "Unmute microphone (M)"}
             pressed={!p.micOn}
             danger={!p.micOn}
             onClick={p.onToggleMic}
@@ -122,7 +161,7 @@ export default function CallScreen(p: Props) {
             {p.micOn ? <MicIcon /> : <MicOffIcon />}
           </IconButton>
           <IconButton
-            label={p.camOn ? "Turn camera off" : "Turn camera on"}
+            label={p.camOn ? "Turn camera off (V)" : "Turn camera on (V)"}
             pressed={!p.camOn}
             danger={!p.camOn}
             onClick={p.onToggleCam}
@@ -137,27 +176,20 @@ export default function CallScreen(p: Props) {
             <button
               type="button"
               onClick={p.onStart}
-              className="press ml-auto flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-lime px-5 text-[16px] font-medium text-lime-ink hover:bg-[#d4f6b3] sm:max-w-[240px] lg:max-w-none"
+              className="press ml-auto flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-lime px-5 text-[16px] font-medium text-lime-ink hover:bg-[#d4f6b3] sm:max-w-[280px]"
             >
               Start again <NextIcon className="size-5" />
             </button>
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={p.onStop}
-                className="press ml-auto flex h-12 items-center gap-1.5 rounded-full bg-raised px-4 text-[15px] hover:bg-line"
-              >
-                <StopIcon className="size-4" /> Stop
-              </button>
-              <button
-                type="button"
-                onClick={p.onNext}
-                className="press flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-lime px-5 text-[16px] font-medium text-lime-ink hover:bg-[#d4f6b3] sm:max-w-[240px] lg:max-w-none"
-              >
-                Next <NextIcon className="size-5" />
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={p.onNext}
+              disabled={p.phase === "waiting"}
+              title="Next (Esc)"
+              className="press ml-auto flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-lime px-5 text-[16px] font-medium text-lime-ink hover:bg-[#d4f6b3] disabled:bg-raised disabled:text-muted sm:max-w-[280px]"
+            >
+              Next <NextIcon className="size-5" />
+            </button>
           )}
         </div>
       </div>
@@ -167,8 +199,9 @@ export default function CallScreen(p: Props) {
         messages={p.messages}
         ready={p.chatReady && connected}
         connected={connected}
+        ended={p.phase === "left" || p.phase === "stopped"}
         onSend={p.onSend}
-        className="flex-1 border-t border-line bg-bg lg:w-[360px] lg:flex-none lg:rounded-[28px] lg:border lg:bg-surface/40"
+        className="min-h-[148px] flex-1 border-t border-line bg-bg lg:w-[360px] lg:flex-none lg:rounded-[28px] lg:border lg:bg-surface/40"
       />
     </div>
   );
@@ -216,20 +249,13 @@ function StageOverlay(p: Props) {
         <p className="max-w-[30ch] text-[15px] leading-relaxed text-muted">
           {leftCopy[p.leftReason ?? "disconnected"]} Tap Next to meet someone new.
         </p>
-        <button
-          type="button"
-          onClick={p.onNext}
-          className="press mt-2 flex h-12 items-center gap-2 rounded-full bg-lime px-6 text-[16px] font-medium text-lime-ink hover:bg-[#d4f6b3]"
-        >
-          Find someone new <NextIcon className="size-5" />
-        </button>
       </>
     );
   } else if (p.phase === "stopped") {
     content = (
       <>
         <h2 className="font-display text-[30px] tracking-[-0.025em]">Chat stopped</h2>
-        <p className="max-w-[30ch] text-[15px] leading-relaxed text-muted">You&apos;re out of the queue. Start again whenever you like.</p>
+        <p className="max-w-[30ch] text-[15px] leading-relaxed text-muted">You&apos;re out of the queue. Come back whenever you like.</p>
         <Link href="/" className="mt-1 text-[15px] text-lime underline decoration-lime/40 underline-offset-4 hover:decoration-lime">
           Back to home
         </Link>
@@ -239,7 +265,9 @@ function StageOverlay(p: Props) {
 
   if (!content) return null;
   return (
-    <div className="rise absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 pt-16 text-center">{content}</div>
+    <div role="status" aria-live="polite" className="rise absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 pt-16 text-center">
+      {content}
+    </div>
   );
 }
 
@@ -253,13 +281,15 @@ function Radar() {
   );
 }
 
-function Chip({ children, tone }: { children: React.ReactNode; tone?: "warn" }) {
+function Chip({ children, tone }: { children: React.ReactNode; tone?: "warn" | "live" }) {
+  const tones = {
+    warn: "bg-warn-bg/85 text-warn",
+    live: "bg-bg/70 text-lime",
+    plain: "bg-bg/70 text-ink/85",
+  };
   return (
-    <span
-      className={`rounded-full px-2.5 py-1 font-mono text-[11px] backdrop-blur ${
-        tone === "warn" ? "bg-[#3a2f12]/85 text-[#ffd98a]" : "bg-bg/70 text-ink/85"
-      }`}
-    >
+    <span className={`rise inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] backdrop-blur ${tones[tone ?? "plain"]}`}>
+      {tone === "live" && <span className="size-1.5 rounded-full bg-lime" />}
       {children}
     </span>
   );

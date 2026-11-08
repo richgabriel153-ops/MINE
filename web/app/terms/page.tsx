@@ -52,9 +52,9 @@ export default function TermsPage() {
         </p>
 
         <ol className="mt-10 divide-y divide-line border-y border-line">
-          {rules.map((r, i) => (
-            <li key={r.title} className="grid grid-cols-[2.5rem_1fr] gap-x-3 py-5 sm:grid-cols-[3.5rem_1fr]">
-              <span className="pt-1 font-mono text-[13px] text-lime">{String(i + 1).padStart(2, "0")}</span>
+          {rules.map((r) => (
+            <li key={r.title} className="grid grid-cols-[1.25rem_1fr] gap-x-3 py-5">
+              <span aria-hidden className="mt-[11px] size-2 rounded-full bg-lime" />
               <div>
                 <h2 className="font-display text-[21px] tracking-[-0.015em]">{r.title}</h2>
                 <p className="mt-1.5 text-[15px] leading-relaxed text-muted">{r.body}</p>
